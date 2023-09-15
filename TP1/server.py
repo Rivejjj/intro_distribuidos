@@ -10,10 +10,16 @@ def init_server():
 
     while True:
         data, addr = suck.recvfrom(1024)
-        print("received message: ", data)
+        header = data[0:5].decode()
+        data = data[5:]
+        print(f"received message: \nHeader: {header}\n, Data: {data}")
         if data == b"Chao":
             suck.sendto(b"OK, chao", addr)
             break
+        
+
+    print("recieved from: ", addr)
+    suck.sendto(b"OK, chao", addr)
     suck.close()
 
 
