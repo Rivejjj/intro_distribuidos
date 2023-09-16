@@ -2,31 +2,42 @@ import socket
 
 UDP_IP = "127.0.0.1"
 UDP_PORT = 6969
+UP = 0
+DOWN = 1
 
+class File:
+    def __init__(self, name, content):
+        self.name = name
+        self.content = content
+
+def parse_upload_request(message):
+    file_name_length = int(message[0])
+    file_name = message[1:file_name_length+1].decode()
+    file_content_length = int(message[file_name_length+1])
+    file_content = message[file_name_length+2:].decode()
+
+    print(f"File name: {file_name}\nFile content:\n{file_content}")
+    return File(file_name, file_content)
+    
 
 def init_server():
     suck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     suck.bind((UDP_IP,UDP_PORT))
-
+    print("The server is ready to receive")
+    
     while True:
         data, addr = suck.recvfrom(1024)
-        header = data[0:5].decode()
-        data = data[5:]
-        print(f"received message: \nHeader: {header}\n, Data: {data}")
-        if data == b"Chao":
-            suck.sendto(b"OK, chao", addr)
-            break
-        
+        request = int(data[0])
 
-    print("recieved from: ", addr)
-    suck.sendto(b"OK, chao", addr)
-    suck.close()
+        if request == UP:
+            file = parse_upload_request(data[1:])
+            # guardar archivo en disco 
+            suck.sendto("File uploaded successfully".encode(), addr) # envio mensaje de confirmacion              
 
-
-
+        #if request == DOWN:
+            # enviar archivo al cliente
 
 def main():
-    print("OK SV")
     init_server()
 
 main()
