@@ -27,7 +27,7 @@ def store_package(filename, data):
     if not os.path.exists():
         try:
             os.mkdir('./server_files/')
-        except OSError:
+        except OSError: 
             return -1
     
 
