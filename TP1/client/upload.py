@@ -1,5 +1,6 @@
 import sys
 import os
+from message import *
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 42069
@@ -9,6 +10,8 @@ MAX_IPV6 = 2**16 -1
 IPV6_SECTIONS = 8
 MIN_PORT = 2**10 
 MAX_PORT = 2**16 -1
+
+seq_num = 0
 
 class UploadOptions:
     def __init__(self, verbosity, host, port, src, name):
@@ -129,7 +132,25 @@ def set_args(args):
 def upload_file(upload_options):
     # Aquí puedes implementar la lógica para cargar el archivo al servidor
     # Utiliza la variable option según sea necesario.
-    pass
+
+    file_size = os.path.getsize(upload_options.src)
+    if file_size > MAX_FILE_SIZE:
+        print("Invalid file size")
+        return
+    
+    file = open(upload_options.src, "rb")
+
+    read = file.read(MAX_PAYLOAD_SIZE)
+    while read != b'':
+        message = Message(Request.Upload, upload_options.name, file_size, sys.getsizeof(read), seq_num, read)
+        message.send_to(upload_options.host, upload_options.port)
+        
+        wait_for_ack()
+        
+        read = file.read(MAX_PAYLOAD_SIZE)
+        
+
+    
 
 def main():
     args = sys.argv[1:] # [1:] para omitir el nombre del script

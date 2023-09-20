@@ -50,6 +50,8 @@ def upload_file(file):
             break
 
     sock.close()
+        
+
 
 def download_file(file_name):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

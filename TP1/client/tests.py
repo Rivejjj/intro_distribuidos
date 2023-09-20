@@ -1,20 +1,17 @@
 
 import unittest
+import upload
 
-def suma(a, b):
-    return a + b
+class ParsingTests(unittest.TestCase):
+    def test_identifies_ipv4(self):
+        self.assertTrue(upload.is_ip("127.0.0.1"))
 
-def resta(a, b):
-    return a - b
+    def test_identifies_ipv6(self):
+        self.assertTrue(upload.is_ip("1050:0000:0000:0000:0005:0600:300c:326b"))
 
-class MiPrueba(unittest.TestCase):
-    def test_suma(self):
-        resultado = suma(2, 3)
-        self.assertEqual(resultado, 4)
-
-    def test_resta(self):
-        resultado = resta(2, 3)
-        self.assertEqual(resultado, 1000)
+    def test_identifies_nonip_addresses(self):
+        self.assertFalse(upload.is_ip("hola como andas"))
+        self.assertFalse(upload.is_ip("127.0.0.10000"))
 
 if __name__ == '__main__':
     unittest.main()
