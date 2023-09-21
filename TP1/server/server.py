@@ -24,7 +24,7 @@ def parse_upload_request(message):
     return File(file_name, file_content)
 
 def store_package(filename, data):
-    if not os.path.exists():
+    if not os.path.exists('./server_files/'):
         try:
             os.mkdir('./server_files/')
         except OSError: 
@@ -32,6 +32,7 @@ def store_package(filename, data):
     
 
     path = './server_files/' + filename
+    print(f"Storing file in {path}")
     with open(path, 'a') as file:
         file.write(data)
     return 0
