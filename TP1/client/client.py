@@ -1,6 +1,8 @@
 import socket
 import os
 from enum import Enum
+from upload import *
+
 
 UDP_IP = "127.0.0.1"
 UDP_PORT = 42069

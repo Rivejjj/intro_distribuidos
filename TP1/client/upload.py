@@ -145,9 +145,9 @@ def upload_file(upload_options):
         message = Message(Request.Upload, upload_options.name, file_size, sys.getsizeof(read), seq_num, read)
         message.send_to(upload_options.host, upload_options.port)
         
-        wait_for_ack()
+        # wait_for_ack() #si estamos en stop & wait
         
-        read = file.read(MAX_PAYLOAD_SIZE)
+        read = message.read(MAX_PAYLOAD_SIZE)
         
 
     
