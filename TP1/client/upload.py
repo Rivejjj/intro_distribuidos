@@ -141,6 +141,7 @@ def upload_file(upload_options):
     file = open(upload_options.src, "rb")
 
     read = file.read(MAX_PAYLOAD_SIZE)
+    #iterar sobre read para leer todo el archivo
     while read != b'':
         message = Message(Request.Upload, upload_options.name, file_size, sys.getsizeof(read), seq_num, read)
         message.send_to(upload_options.host, upload_options.port)
