@@ -53,17 +53,15 @@ class MessageHeader:
 
     def to_bytes(self):
         lenght = len(self.file_name.encode())
-        tail_lenght =  FILE_NAME_SIZE_BYTES - lenght - len('\r\n')
+        tail_lenght =  FILE_NAME_SIZE_BYTES - lenght
         byte_seq = self.request.to_bytes(1, byteorder='big')
-        #byte_seq += self.file_name.encode()[:FILE_NAME_SIZE_BYTES]
         byte_seq += self.file_name.encode()
-        byte_seq += '\r\n'.encode()
         byte_seq += int(0).to_bytes(tail_lenght, 'big')
         byte_seq += self.file_size.to_bytes(FILE_SIZE_BYTES, 'big')
         byte_seq += self.payload_size.to_bytes(PAYLOAD_SIZE_BYTES, 'big')
         byte_seq += self.seq_num.to_bytes(SEQ_NUM_BYTES, 'big')
-        print("BYTE SEQ seq num     : ",byte_seq)
-        print("BITS ",bin(int.from_bytes(byte_seq[0:], byteorder='big')))
+        # print("BYTE SEQ seq num     : ",byte_seq)
+        # print("BITS ",bin(int.from_bytes(byte_seq[0:], byteorder='big')))
         return byte_seq
         
         #p ver lo de hash
@@ -71,16 +69,13 @@ class MessageHeader:
     @classmethod
     def from_bytes(self, data):
         request = int.from_bytes(data[:1], byteorder='big')
-        file_name = str(data[1:FILE_NAME_SIZE_END].decode())  
-        file_name = file_name.split('\r\n')[0] #
-        print(f"FILE NAME: {data[1:FILE_NAME_SIZE_END].decode()}")
+        file_name = data[1:FILE_NAME_SIZE_END].decode().rstrip('\x00')
         file_size = int.from_bytes(data[FILE_NAME_SIZE_END:FILE_SIZE_END], byteorder='big')
         payload_size = int.from_bytes(data[FILE_SIZE_END: PAYLOAD_SIZE_END], byteorder='big')
         seq_num = int.from_bytes(data[PAYLOAD_SIZE_END:HEADER_SIZE], byteorder='big')
         return MessageHeader(request, file_name, file_size, payload_size, seq_num)
         #hash =
 
- # 00000010 00000000 = \x02\x00
 class Message:
     def __init__(self, request: Request, file_name: str, file_size: int, payload_size: int, seq_num: int, payload: bytearray):
         self.header = MessageHeader(request, file_name, file_size, payload_size, seq_num)
@@ -110,28 +105,26 @@ class Message:
         return Message(header, payload)
 
 
-class TestStringMethods(unittest.TestCase):
-    def test(self):
+class TestMessageHeaderMethods(unittest.TestCase):
     
-        request = 1
-        file_name = "test.txt"
-        file_size = 2
-        payload_size = 2
-        seq_num = 3
-        header = MessageHeader(request, file_name, file_size, payload_size, seq_num)
-
-        bytes = header.to_bytes()
-        
+    def test_parse_and_serialize(self):
+        header1 = MessageHeader(request=1, 
+                               file_name="test.txt", 
+                               file_size=2, 
+                               payload_size=2, 
+                               seq_num=3)
+        bytes = header1.to_bytes()
         header2 = MessageHeader.from_bytes(bytes)
 
-        self.assertEqual(header.file_name,header2.file_name)
-        self.assertEqual(header.file_size,header2.file_size)
-        self.assertEqual(header.payload_size,header2.payload_size)
-        self.assertEqual(header.seq_num,header2.seq_num)
-        self.assertDictEqual(vars(header),vars(header2))
+        self.assertEqual(header1.file_name,header2.file_name)
+        self.assertEqual(header1.file_size,header2.file_size)
+        self.assertEqual(header1.payload_size,header2.payload_size)
+        self.assertEqual(header1.seq_num,header2.seq_num)
+        self.assertDictEqual(vars(header1),vars(header2))
 
 
-unittest.main()
+if __name__ == '__main__':
+    unittest.main()
     
 
 
