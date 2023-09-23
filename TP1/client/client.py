@@ -1,7 +1,8 @@
 import socket
 import os
 from enum import Enum
-from upload import *
+from transfer_file import *
+from command_options import *
 
 
 UDP_IP = "127.0.0.1"
@@ -39,22 +40,6 @@ def define_message(file, request):
     #if request == DOWN:
     return header
 
-def upload_file(file):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    print("The client is ready to send")
-
-    while True:
-        message = define_message(file, UP)
-        sock.sendto(message, (UDP_IP, UDP_PORT))
-        message_response, server_addr = sock.recvfrom(1024)
-        if message_response.decode() == "File uploaded successfully":
-            print(f"{message_response.decode()}")
-            break
-
-    sock.close()
-        
-
-
 def download_file(file_name):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     request = define_message(file_name, DOWN)
@@ -73,9 +58,17 @@ def download_file(file_name):
         received.write(content)
         file_content, server_addr = sock.recvfrom(1024)
 
+def resolve_command(command: Options):
+    if command.request == Request.Upload:
+        send_file(command)
+
+
 def main():
-    file = open(FILE_NAME, "r")
-    upload_file(file)
-    file.close()
+    args = sys.argv[1:] # [1:] para omitir el nombre del script
+
+    command = Options.from_args(args)
+    if (command == None):
+        return
+    resolve_command(command)
 
 main()

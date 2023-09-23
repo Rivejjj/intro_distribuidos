@@ -1,6 +1,4 @@
-import sys
-import os
-from message import *
+from message import Request
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 42069
@@ -11,15 +9,43 @@ IPV6_SECTIONS = 8
 MIN_PORT = 2**10 
 MAX_PORT = 2**16 -1
 
-seq_num = 0
-
-class UploadOptions:
-    def __init__(self, verbosity, host, port, src, name):
+class Options:
+    def __init__(self, request, verbosity, host, port, src, name):
+        self.request = request
         self.verbosity = verbosity
         self.host = host
         self.port = port
         self.src = src
         self.name = name
+
+    def from_args(args):
+        if "-h" in args or "--help" in args:
+            print_help()
+            return None
+        
+        request = Request.Upload
+        verbosity = False
+        host = DEFAULT_HOST 
+        port = DEFAULT_PORT
+        src = None
+        filename = "nombre que se yo" #p ver
+        
+        for i, arg in enumerate(args):
+            if arg == "-q" or arg == "--quiet":
+                verbosity = False
+            elif arg == "-v" or arg == "--verbose":
+                verbosity = True
+            elif i + 1 < len(args):
+                if arg == "-H" or arg == "--host":
+                    host = set_host(args[i + 1])
+                elif arg == "-p" or arg == "--port":
+                    port = set_port(args[i + 1])
+                elif arg == "-s" or arg == "--src":
+                    src = set_filename(args[i + 1])
+                elif arg == "-n" or arg == "--name":
+                    filename = set_filename(args[i + 1])
+            
+        return Options(request, verbosity, host, port, src, filename)
 
     def __str__(self):
         return f"UploadOptions(verbosity={self.verbosity}, host={self.host}, port={self.port}, src={self.src}, name={self.name})"
@@ -103,68 +129,3 @@ def set_filename(arg):
     print("Invalid filename.")
     return None
 
-def set_args(args):
-    verbosity = False
-    host = None #host default
-    port = None
-    src = None
-    filename = None
-    
-    for i, arg in enumerate(args):
-        if arg == "-q" or arg == "--quiet":
-            verbosity = False
-        elif arg == "-v" or arg == "--verbose":
-            verbosity = True
-        elif i + 1 < len(args):
-            if arg == "-H" or arg == "--host":
-                host = set_host(args[i + 1])
-            elif arg == "-p" or arg == "--port":
-                port = set_port(args[i + 1])
-            elif arg == "-s" or arg == "--src":
-                src = set_filename(args[i + 1])
-            elif arg == "-n" or arg == "--name":
-                filename = set_filename(args[i + 1])
-        
-    return UploadOptions(verbosity, host, port, src, filename)
-
-
-
-def upload_file(upload_options):
-    # Aquí puedes implementar la lógica para cargar el archivo al servidor
-    # Utiliza la variable option según sea necesario.
-
-    file_size = os.path.getsize(upload_options.src)
-    if file_size > MAX_FILE_SIZE:
-        print("Invalid file size")
-        return
-    
-    file = open(upload_options.src, "rb")
-
-    read = file.read(MAX_PAYLOAD_SIZE)
-    #iterar sobre read para leer todo el archivo
-    while read != b'':
-        message = Message(Request.Upload, upload_options.name, file_size, sys.getsizeof(read), seq_num, read)
-        message.send_to(upload_options.host, upload_options.port)
-        
-        # wait_for_ack() #si estamos en stop & wait
-        
-        read = message.read(MAX_PAYLOAD_SIZE)
-        
-
-    
-
-def main():
-    args = sys.argv[1:] # [1:] para omitir el nombre del script
-
-    # Solo es un help
-    if "-h" in args or "--help" in args:
-        print_help()
-        return
-    
-    option = set_args(args)
-    print(option)
-    
-    upload_file(option) 
-
-if __name__ == '__main__':
-    main()

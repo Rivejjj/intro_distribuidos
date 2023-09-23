@@ -1,25 +1,31 @@
 import socket
 from enum import Enum
 import sys
+import time
 import unittest
 
 #numeros son provisorios
 FILE_NAME_SIZE_BYTES = 64
-FILE_SIZE_BYTES = 4                        #Bytes del campo FILE_SIZE del header
+FILE_SIZE_BYTES = 3                        #Bytes del campo FILE_SIZE del header
 PAYLOAD_SIZE_BYTES = 2    #2**16 payload paquete                  #Bytes del campo PAYLOAD_SIZE del header
 SEQ_NUM_BYTES = 2 
 
-FILE_SIZE = 2**(8*FILE_SIZE_BYTES)          
-PAYLOAD_SIZE = 2**(8*PAYLOAD_SIZE_BYTES) - 1
+
+MAX_FILE_SIZE = 2**(8*FILE_SIZE_BYTES)
 
 FILE_NAME_SIZE_END = FILE_NAME_SIZE_BYTES + 1
 FILE_SIZE_END = FILE_NAME_SIZE_END + FILE_SIZE_BYTES #byte del header en el que termina file size
 PAYLOAD_SIZE_END = FILE_SIZE_END + PAYLOAD_SIZE_BYTES #byte del header en el que termina payload size
 HEADER_SIZE = PAYLOAD_SIZE_END + SEQ_NUM_BYTES
 
+UDP_PAYLOAD_SIZE = 65507 #65,507 bytes for IPv4 and 65,527 bytes for IPv6
+PAYLOAD_SIZE = UDP_PAYLOAD_SIZE - HEADER_SIZE
 class Request(Enum):
     Upload = 0
     Download = 1
+
+    def to_bytes(self):
+        return self.value.to_bytes(1, 'big')
 
 # formato:
     #     2 bits 0: request (UPLOAD=0, DOWNLOAD=1, ack= 2, solicitud de files disponibles = 3)
@@ -43,25 +49,25 @@ class MessageHeader:
         self.hash = None
         #p ver lo de hash
 
-    def print_header(self):
-        print(f"Request: {self.request}\\" )
-        print(f"File name: {self.file_name}\\")
-        print(f"File size: {self.file_size}\\")
-        print(f"Payload size: {self.payload_size}\\")
-        print(f"Sequence number: {self.seq_num}\\")
-        #p ver lo de hash
+    def __str__(self):
+        representation = f"Request: {self.request}\n"
+        representation += f"File name: {self.file_name}\n"
+        representation += f"File size: {self.file_size}\n"
+        representation += f"Payload size: {self.payload_size}\n"
+        representation += f"Sequence number: {self.seq_num}\n"
+        return representation
 
     def to_bytes(self):
-        lenght = len(self.file_name.encode())
-        tail_lenght =  FILE_NAME_SIZE_BYTES - lenght
-        byte_seq = self.request.to_bytes(1, byteorder='big')
+        lenght = len(self.file_name)
+        byte_seq = self.request.to_bytes()
         byte_seq += self.file_name.encode()
-        byte_seq += int(0).to_bytes(tail_lenght, 'big')
+        byte_seq += int(0).to_bytes(FILE_NAME_SIZE_BYTES - lenght, 'big')
         byte_seq += self.file_size.to_bytes(FILE_SIZE_BYTES, 'big')
         byte_seq += self.payload_size.to_bytes(PAYLOAD_SIZE_BYTES, 'big')
         byte_seq += self.seq_num.to_bytes(SEQ_NUM_BYTES, 'big')
         # print("BYTE SEQ seq num     : ",byte_seq)
         # print("BITS ",bin(int.from_bytes(byte_seq[0:], byteorder='big')))
+        print(f"el to bytes del header es {byte_seq}")
         return byte_seq
         
         #p ver lo de hash
@@ -75,32 +81,59 @@ class MessageHeader:
         seq_num = int.from_bytes(data[PAYLOAD_SIZE_END:HEADER_SIZE], byteorder='big')
         return MessageHeader(request, file_name, file_size, payload_size, seq_num)
         #hash =
+    
+    @classmethod
+    def recv_from(self, socket):
+        data, addr = socket.recvfrom(HEADER_SIZE+1000)
+        print(data)
+        return MessageHeader.from_bytes(data), addr
+
 
 class Message:
-    def __init__(self, request: Request, file_name: str, file_size: int, payload_size: int, seq_num: int, payload: bytearray):
-        self.header = MessageHeader(request, file_name, file_size, payload_size, seq_num)
-        self.payload = payload
-
-    def __init__(self, header: MessageHeader, payload: str):
+    def __init__(self, header: MessageHeader, payload: bytearray):
         self.header = header
         self.payload = payload
+    
+    def __str__(self):
+        return self.header.__str__() + "\n payload: \n" + self.payload.hex()
+    
+    def new(request: Request, file_name: str, file_size: int, payload_size: int, seq_num: int, payload: bytearray):
+        header = MessageHeader(request, file_name, file_size, payload_size, seq_num)
+        return Message(header, payload)
     
     def send_to(self, dest_ip, dest_port):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         bytes_to_send = self.header.to_bytes() + self.payload
+        print(f"bytes to send {bytes_to_send} \n\n\n longitud {len(bytes_to_send)}")
         sock.sendto(bytes_to_send, (dest_ip, dest_port))
         #sock.sendto(self.header.to_bytes(), (dest_ip, dest_port))
         #sock.sendto(self.payload, (dest_ip, dest_port))
 
+    """
     def read(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        data, addr = sock.recvfrom(PAYLOAD_SIZE)
+        data, addr = sock.recv(PAYLOAD_SIZE)
         return self.parse(data)
+    """
+    @classmethod
+    def from_bytes(self, data):
+        header = MessageHeader.from_bytes(data[:HEADER_SIZE])
+        if header.payload_size > PAYLOAD_SIZE:
+            print("Received invalid message size")
+            #ver que hacer porque te pueden haber mandado lo bytes de mas en otro paquete de udp
+            return None
+        return Message(header, data[HEADER_SIZE:])
 
+    @classmethod
+    def recv_from(self, socket: socket.socket):
+        datagram_payload, addr = socket.recvfrom(UDP_PAYLOAD_SIZE)
+        return Message.from_bytes(datagram_payload), addr
+
+    #parse no se que tanto nos sirva, porque vos nunca sabes cuantos byutes vas a recibir sin fijarte primero el header
     @classmethod
     def parse(self,data):
         header = MessageHeader.from_bytes(data)
-        payload_size = header.payload_size
+        d_size = header.payload_size
         payload = data[HEADER_SIZE: HEADER_SIZE+payload_size+1].decode()
         return Message(header, payload)
 

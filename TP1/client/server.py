@@ -1,5 +1,8 @@
 import socket
 import os
+import time
+from message import *
+from transfer_file import store_package
 
 UDP_IP = "127.0.0.1"
 UDP_PORT = 42069
@@ -22,21 +25,6 @@ def parse_upload_request(message):
 
     print(f"File name: {file_name}\nFile content:\n{file_content}")
     return File(file_name, file_content)
-
-def store_package(filename, data):
-    if not os.path.exists('./server_files/'):
-        try:
-            os.mkdir('./server_files/')
-        except OSError: 
-            return -1
-    
-
-    path = './server_files/' + filename
-    print(f"Storing file in {path}")
-    with open(path, 'a') as file:
-        file.write(data)
-    return 0
-    
 
 def init_server():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -64,7 +52,33 @@ def init_server():
 
         #Envio de ack
 
+def store_package_server(file_name, payload):
+    if not os.path.exists('./server_files/'):
+        try:
+            os.mkdir('./server_files/')
+        except OSError: 
+            return -1
+    
+    path = './server_files/' + file_name
+    return store_package(path, payload)
+
+
+def serversito():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((UDP_IP,UDP_PORT))    
+    print("The server is ready to receive")
+    while True:
+        msg, addr = Message.recv_from(sock)
+        result = store_package_server(msg.header.file_name, msg.payload)
+        if result == -1:
+            print("Filed to store file")
+            # EN LUGAR DEL ACK SE MANDA ERROR PA CORTAR LA TRANSMICION
+            return # Y muere hilo de este cliente
+        print(msg)
+        
+
 def main():
-    init_server()
+    #init_server()
+    serversito()
 
 main()
