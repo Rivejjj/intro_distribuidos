@@ -3,13 +3,15 @@ from enum import Enum
 import sys
 import time
 import unittest
-from errors import Error
+import hashlib
+from lib.errors import Error
 
 #numeros son provisorios
 FILE_NAME_SIZE_BYTES = 64
 FILE_SIZE_BYTES = 3                        #Bytes del campo FILE_SIZE del header
 PAYLOAD_SIZE_BYTES = 2    #2**16 payload paquete                  #Bytes del campo PAYLOAD_SIZE del header
-SEQ_NUM_BYTES = 2 
+SEQ_NUM_BYTES = 2
+HASH_BYTES = 4
 
 
 MAX_FILE_SIZE = 2**(8*FILE_SIZE_BYTES)
@@ -17,7 +19,8 @@ MAX_FILE_SIZE = 2**(8*FILE_SIZE_BYTES)
 FILE_NAME_SIZE_END = FILE_NAME_SIZE_BYTES + 1
 FILE_SIZE_END = FILE_NAME_SIZE_END + FILE_SIZE_BYTES #byte del header en el que termina file size
 PAYLOAD_SIZE_END = FILE_SIZE_END + PAYLOAD_SIZE_BYTES #byte del header en el que termina payload size
-HEADER_SIZE = PAYLOAD_SIZE_END + SEQ_NUM_BYTES
+SEQ_SIZE_END = PAYLOAD_SIZE_END + SEQ_NUM_BYTES
+HEADER_SIZE = SEQ_SIZE_END + HASH_BYTES
 
 UDP_PAYLOAD_SIZE = 65507 #65,507 bytes for IPv4 and 65,527 bytes for IPv6
 PAYLOAD_SIZE = UDP_PAYLOAD_SIZE - HEADER_SIZE
@@ -42,13 +45,13 @@ class Request(Enum):
     #     payload bytes n+1 a m: contenido del archivo (solo si request es UPLOAD)
 
 class MessageHeader:
-    def __init__(self, request: Request, file_name: str, file_size: int, payload_size: int, seq_num: int):
+    def __init__(self, request: Request, file_name: str, file_size: int, payload_size: int, seq_num: int, hash:int =None):
         self.request = request
         self.file_name = file_name
         self.file_size = file_size
         self.payload_size = payload_size
         self.seq_num = seq_num
-        self.hash = None
+        self.hash = hash
         #p ver lo de hash
 
     def __str__(self):
@@ -57,9 +60,10 @@ class MessageHeader:
         representation += f"File size: {self.file_size}\n"
         representation += f"Payload size: {self.payload_size}\n"
         representation += f"Sequence number: {self.seq_num}\n"
+        representation += f"Hash: {self.hash}\n"
         return representation
 
-    def to_bytes(self):
+    def hashless_bytes(self):
         lenght = len(self.file_name)
         byte_seq = self.request.to_bytes()
         byte_seq += self.file_name.encode()
@@ -67,12 +71,13 @@ class MessageHeader:
         byte_seq += self.file_size.to_bytes(FILE_SIZE_BYTES, 'big')
         byte_seq += self.payload_size.to_bytes(PAYLOAD_SIZE_BYTES, 'big')
         byte_seq += self.seq_num.to_bytes(SEQ_NUM_BYTES, 'big')
-        # print("BYTE SEQ seq num     : ",byte_seq)
-        # print("BITS ",bin(int.from_bytes(byte_seq[0:], byteorder='big')))
-        #print(f"el to bytes del header es {byte_seq}")
         return byte_seq
+    
+    def to_bytes(self):
+        return self.hashless_bytes() + self.hash.to_bytes(HASH_BYTES, 'big')
         
-        #p ver lo de hash
+    def calculate_hash(self):
+        return hash_bytes(self.hashless_bytes())
 
     @classmethod
     def from_bytes(self, data):
@@ -80,10 +85,9 @@ class MessageHeader:
         file_name = data[1:FILE_NAME_SIZE_END].decode().rstrip('\x00')
         file_size = int.from_bytes(data[FILE_NAME_SIZE_END:FILE_SIZE_END], byteorder='big')
         payload_size = int.from_bytes(data[FILE_SIZE_END: PAYLOAD_SIZE_END], byteorder='big')
-        seq_num = int.from_bytes(data[PAYLOAD_SIZE_END:HEADER_SIZE], byteorder='big')
-        return MessageHeader(request, file_name, file_size, payload_size, seq_num)
-        #hash =
-
+        seq_num = int.from_bytes(data[PAYLOAD_SIZE_END:SEQ_SIZE_END], byteorder='big')
+        hash = int.from_bytes(data[SEQ_SIZE_END: HEADER_SIZE], byteorder='big')
+        return MessageHeader(request, file_name, file_size, payload_size, seq_num, hash)
 
 class Message:
     def __init__(self, header: MessageHeader, payload: bytearray):
@@ -93,8 +97,13 @@ class Message:
     def __str__(self):
         return self.header.__str__() #+ "\n payload: \n" + self.payload.hex()
     
-    def new(request: Request, file_name: str, file_size: int, payload_size: int, seq_num: int, payload: bytearray):
+    #crea un mensaje ya hasheado
+    def make(request: Request, file_name: str, file_size: int, payload_size: int, seq_num: int, payload: bytearray):
         header = MessageHeader(request, file_name, file_size, payload_size, seq_num)
+        header_hash = int.from_bytes(header.calculate_hash(), byteorder='big')
+        payload_hash = int.from_bytes(hash_bytes(payload), byteorder='big')
+        header.hash = (header_hash + payload_hash) % (2**32)
+
         return Message(header, payload)
     
     def send_to(self, sock: socket, addr):
@@ -106,7 +115,7 @@ class Message:
         #sock.sendto(self.payload, (dest_ip, dest_port))
 
     def acknowledge(self, sock: socket, addr):
-        ack_msg = Message.new(Request.Ack, self.header.file_name, self.header.file_size, 0, self.header.seq_num, b"")
+        ack_msg = Message.make(Request.Ack, self.header.file_name, self.header.file_size, 0, self.header.seq_num, b"")
         ack_msg.send_to(sock, addr)
 
 
@@ -137,6 +146,16 @@ class Message:
 # finally:
 #     sock.close()
 
+
+def hash_bytes(bytes: bytearray):
+    # Crea un objeto hasher SHA-256
+    hasher = hashlib.sha256()
+    
+    # Actualiza el hasher con los datos
+    hasher.update(bytes)
+    
+    # Devuelve el hash en formato de bytes
+    return hasher.digest()[:32]
 
 class TestMessageHeaderMethods(unittest.TestCase):
     

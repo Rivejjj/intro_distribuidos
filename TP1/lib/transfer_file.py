@@ -1,13 +1,15 @@
 import sys
 import os
 import time
+import hashlib
 from lib.message import *
 from lib.command_options import Options
 
 
 seq_num = 0
-TIMEOUT = 10 # A definir
-PACKAGE_TIMEOUT = 30 # A definir
+TIMEOUT = 0.2 # A definir
+PACKAGE_TIMEOUT = 1 # A definir
+MAX_ATTEMPTS = 5
 
 def send_file(options: Options):
     file_size = os.path.getsize(options.src)
@@ -21,16 +23,23 @@ def send_file(options: Options):
 
     read = file.read(PAYLOAD_SIZE)
     sock.settimeout(TIMEOUT) #p ver este valor
+    send_attempts = 0
     #iterar sobre read para leer todo el archivo
-    while read != b'':
-        message = Message.new(options.request, options.name, file_size, len(read), seq_num, read)
+    while (read != b'') and (send_attempts < MAX_ATTEMPTS):
+        message = Message.make(options.request, options.name, file_size, len(read), seq_num, read)
         print(message)
         message.send_to(sock, (options.host, options.port))
+        send_attempts +=1
         sent = time.time()
         while time.time() - sent < PACKAGE_TIMEOUT:
-            msg = Message.recv_from(sock)
-            if msg.request == Request.Ack:
+            try: 
+                msg, addr = Message.recv_from(sock)
+            except:
+                continue
+            if msg.header.request == Request.Ack.value:
+                send_attempts = 0
                 read = file.read(PAYLOAD_SIZE)
+                print("received_ack")
                 break
 
         # wait_for_ack() #si estamos en stop & wait
