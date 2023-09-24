@@ -3,6 +3,7 @@ from enum import Enum
 import sys
 import time
 import unittest
+from errors import Error
 
 #numeros son provisorios
 FILE_NAME_SIZE_BYTES = 64
@@ -82,12 +83,6 @@ class MessageHeader:
         seq_num = int.from_bytes(data[PAYLOAD_SIZE_END:HEADER_SIZE], byteorder='big')
         return MessageHeader(request, file_name, file_size, payload_size, seq_num)
         #hash =
-    
-    @classmethod
-    def recv_from(self, socket):
-        data, addr = socket.recvfrom(HEADER_SIZE+1000)
-        #print(data)
-        return MessageHeader.from_bytes(data), addr
 
 
 class Message:
@@ -127,8 +122,21 @@ class Message:
 
     @classmethod
     def recv_from(self, socket: socket.socket):
-        datagram_payload, addr = socket.recvfrom(UDP_PAYLOAD_SIZE)
+        try:
+            datagram_payload, addr = socket.recvfrom(UDP_PAYLOAD_SIZE)
+        except socket.timeout:
+            return Error.RcvTimeout
+
         return Message.from_bytes(datagram_payload), addr
+# try:
+#     # Espera la respuesta durante el tiempo especificado
+#     data, addr = sock.recvfrom(1024)
+#     print("Respuesta recibida:", data.decode())
+# except socket.timeout:
+#     print("Tiempo de espera agotado. No se recibió ninguna respuesta.")
+# finally:
+#     sock.close()
+
 
 class TestMessageHeaderMethods(unittest.TestCase):
     

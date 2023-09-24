@@ -1,9 +1,13 @@
 import sys
 import os
+import time
 from lib.message import *
 from lib.command_options import Options
 
+
 seq_num = 0
+TIMEOUT = 10 # A definir
+PACKAGE_TIMEOUT = 30 # A definir
 
 def send_file(options: Options):
     file_size = os.path.getsize(options.src)
@@ -16,16 +20,21 @@ def send_file(options: Options):
     sock.bind(("127.0.0.2", 42069))
 
     read = file.read(PAYLOAD_SIZE)
+    sock.settimeout(TIMEOUT) #p ver este valor
     #iterar sobre read para leer todo el archivo
     while read != b'':
         message = Message.new(options.request, options.name, file_size, len(read), seq_num, read)
         print(message)
         message.send_to(sock, (options.host, options.port))
-        Message.recv_from(sock)
+        sent = time.time()
+        while time.time() - sent < PACKAGE_TIMEOUT:
+            msg = Message.recv_from(sock)
+            if msg.request == Request.Ack:
+                read = file.read(PAYLOAD_SIZE)
+                break
 
         # wait_for_ack() #si estamos en stop & wait
         
-        read = file.read(PAYLOAD_SIZE)
 
 # def handle_msg(msg: Message):
 #     if msg.header.request == Request.Upload:

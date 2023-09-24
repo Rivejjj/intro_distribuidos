@@ -2,6 +2,7 @@ from enum import Enum
 
 class Error(Enum):
     ErrorStoringData = 1
+    RcvTimeout = 2
 
     def __str__(self):
         self.name
