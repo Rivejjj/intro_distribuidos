@@ -10,7 +10,6 @@ UDP_PORT = 42069
 UP = 0
 DOWN = 1
 
-
 class File:
     def __init__(self, name, content):
         self.name = name
@@ -82,7 +81,7 @@ def handle_upload(msg: Message, addr, sock: socket):
     result = store_package_server(msg.header.file_name, msg.payload)
     if Error.is_error(result): 
         return result
-    msg.acknowledge(sock, addr)
+    #msg.acknowledge(sock, addr)
 
 def handle_message(msg: Message, addr, sock: socket):
     if msg.header.request == Request.Upload.value:
@@ -96,3 +95,28 @@ def main():
     serversito()
 
 main()
+
+
+
+# import socket
+
+# # Crea un socket UDP
+# sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+# # Establece un tiempo de espera en segundos
+# timeout = 5
+
+# try:
+#     # Espera la respuesta durante el tiempo especificado
+#     sock.settimeout(timeout)
+#     data, addr = sock.recvfrom(1024)
+#     print("Respuesta recibida:", data.decode())
+# except socket.timeout:
+#     print("Tiempo de espera agotado. No se recibió ninguna respuesta.")
+# finally:
+#     sock.close()
+
+
+
+
+
