@@ -1,8 +1,8 @@
 import socket
 import os
 from enum import Enum
-from transfer_file import *
-from command_options import *
+from lib.transfer_file import *
+from lib.command_options import *
 
 
 UDP_IP = "127.0.0.1"
@@ -11,6 +11,7 @@ FILE_NAME = "archivo_test.txt"
 UP = 0
 DOWN = 1   
 
+"""
 def define_message(file, request):
     # formato:
     #     2 bits 0: request (UPLOAD=0, DOWNLOAD=1, ack= 2, solicitud de files disponibles = 3)
@@ -57,18 +58,14 @@ def download_file(file_name):
         print(content)
         received.write(content)
         file_content, server_addr = sock.recvfrom(1024)
-
-def resolve_command(command: Options):
-    if command.request == Request.Upload:
-        send_file(command)
-
+"""
 
 def main():
     args = sys.argv[1:] # [1:] para omitir el nombre del script
 
-    command = Options.from_args(args)
+    command = Options.from_args(args, Request.Upload)
     if (command == None):
         return
-    resolve_command(command)
+    send_file(command)
 
 main()

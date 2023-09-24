@@ -1,4 +1,4 @@
-from message import Request
+from lib.message import Request
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 42069
@@ -18,12 +18,12 @@ class Options:
         self.src = src
         self.name = name
 
-    def from_args(args):
+    def from_args(args, request):
         if "-h" in args or "--help" in args:
             print_help()
             return None
         
-        request = Request.Upload
+        request = request
         verbosity = False
         host = DEFAULT_HOST 
         port = DEFAULT_PORT

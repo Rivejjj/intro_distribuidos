@@ -23,6 +23,7 @@ PAYLOAD_SIZE = UDP_PAYLOAD_SIZE - HEADER_SIZE
 class Request(Enum):
     Upload = 0
     Download = 1
+    Ack = 2
 
     def to_bytes(self):
         return self.value.to_bytes(1, 'big')
@@ -67,7 +68,7 @@ class MessageHeader:
         byte_seq += self.seq_num.to_bytes(SEQ_NUM_BYTES, 'big')
         # print("BYTE SEQ seq num     : ",byte_seq)
         # print("BITS ",bin(int.from_bytes(byte_seq[0:], byteorder='big')))
-        print(f"el to bytes del header es {byte_seq}")
+        #print(f"el to bytes del header es {byte_seq}")
         return byte_seq
         
         #p ver lo de hash
@@ -85,7 +86,7 @@ class MessageHeader:
     @classmethod
     def recv_from(self, socket):
         data, addr = socket.recvfrom(HEADER_SIZE+1000)
-        print(data)
+        #print(data)
         return MessageHeader.from_bytes(data), addr
 
 
@@ -95,26 +96,25 @@ class Message:
         self.payload = payload
     
     def __str__(self):
-        return self.header.__str__() + "\n payload: \n" + self.payload.hex()
+        return self.header.__str__() #+ "\n payload: \n" + self.payload.hex()
     
     def new(request: Request, file_name: str, file_size: int, payload_size: int, seq_num: int, payload: bytearray):
         header = MessageHeader(request, file_name, file_size, payload_size, seq_num)
         return Message(header, payload)
     
-    def send_to(self, dest_ip, dest_port):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    def send_to(self, sock: socket, addr):
+        #sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         bytes_to_send = self.header.to_bytes() + self.payload
-        print(f"bytes to send {bytes_to_send} \n\n\n longitud {len(bytes_to_send)}")
-        sock.sendto(bytes_to_send, (dest_ip, dest_port))
-        #sock.sendto(self.header.to_bytes(), (dest_ip, dest_port))
+        print(f"\n longitud {len(bytes_to_send)}")
+        sock.sendto(bytes_to_send, addr)
+        ##sock.sendto(self.header.to_bytes(), (dest_ip, dest_port))
         #sock.sendto(self.payload, (dest_ip, dest_port))
 
-    """
-    def read(self):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        data, addr = sock.recv(PAYLOAD_SIZE)
-        return self.parse(data)
-    """
+    def acknowledge(self, sock: socket, addr):
+        ack_msg = Message.new(Request.Ack, self.header.file_name, self.header.file_size, 0, self.header.seq_num, b"")
+        ack_msg.send_to(sock, addr)
+
+
     @classmethod
     def from_bytes(self, data):
         header = MessageHeader.from_bytes(data[:HEADER_SIZE])
@@ -122,21 +122,13 @@ class Message:
             print("Received invalid message size")
             #ver que hacer porque te pueden haber mandado lo bytes de mas en otro paquete de udp
             return None
+    
         return Message(header, data[HEADER_SIZE:])
 
     @classmethod
     def recv_from(self, socket: socket.socket):
         datagram_payload, addr = socket.recvfrom(UDP_PAYLOAD_SIZE)
         return Message.from_bytes(datagram_payload), addr
-
-    #parse no se que tanto nos sirva, porque vos nunca sabes cuantos byutes vas a recibir sin fijarte primero el header
-    @classmethod
-    def parse(self,data):
-        header = MessageHeader.from_bytes(data)
-        d_size = header.payload_size
-        payload = data[HEADER_SIZE: HEADER_SIZE+payload_size+1].decode()
-        return Message(header, payload)
-
 
 class TestMessageHeaderMethods(unittest.TestCase):
     
