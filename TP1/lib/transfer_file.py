@@ -10,22 +10,22 @@ TIMEOUT = 0.2 # A definir
 PACKAGE_TIMEOUT = 1 # A definir
 MAX_ATTEMPTS = 10
 
-def send_file(options: Options, seq_num):
+def send_file(options: Options, seq_num, addr):
     file_size = os.path.getsize(options.src)
     if file_size > MAX_FILE_SIZE:
         print("Invalid file size")
         return
     
-    file = open(options.src, "rb")
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(("127.0.0.2", 42069))
+    file = open(options.src, "rb")
+    sock.bind(addr)
 
     read = file.read(PAYLOAD_SIZE)
     sock.settimeout(TIMEOUT) #p ver este valor
     send_attempts = 0
     #iterar sobre read para leer todo el archivo
     while (read != b'') and (send_attempts < MAX_ATTEMPTS):
-        message = Message.make(options.request, options.name, file_size, len(read), seq_num, read)
+        message = Message.make(options.type, options.name, file_size, len(read), seq_num, read)
         print(message)
         
         if random.random() > 0.8:
@@ -40,7 +40,7 @@ def send_file(options: Options, seq_num):
             if Error.is_error(msg):
                 continue
             
-            if (msg.header.request == Request.Ack) and (msg.header.seq_num == seq_num):
+            if (msg.header.type == Type.Ack) and (msg.header.seq_num == seq_num):
                 send_attempts = 0
                 seq_num += 1
                 read = file.read(PAYLOAD_SIZE)
@@ -54,7 +54,7 @@ def receive_file(options: Options):
     print("hola")
 
 
-# def handle_msg(msg: Message):
+# def handle_msg( : Message):
 #     if msg.header.request == Request.Upload:
 #         result = store_package_server(msg.header.file_name, msg.payload)
 #         if result == -1:

@@ -24,9 +24,9 @@ HEADER_SIZE = SEQ_SIZE_END + HASH_BYTES
 
 UDP_PAYLOAD_SIZE = 65507 #65,507 bytes for IPv4 and 65,527 bytes for IPv6
 PAYLOAD_SIZE = UDP_PAYLOAD_SIZE - HEADER_SIZE
-class Request(Enum):
-    Upload = 0
-    Download = 1
+class Type(Enum):
+    Send = 0
+    Receive = 1
     Ack = 2
 
     def to_bytes(self):
@@ -35,12 +35,12 @@ class Request(Enum):
     @classmethod
     def new(self, value):
         try:
-            return Request(value)
+            return Type(value)
         except ValueError:
-            return Error.UnknownRequest
+            return Error.UnknownType
 
 # formato:
-    #     2 bits 0: request (UPLOAD=0, DOWNLOAD=1, ack= 2, solicitud de files disponibles = 3)
+    #     2 bits 0: type (UPLOAD=0, DOWNLOAD=1, ack= 2, solicitud de files disponibles = 3)
     #     32 u 64 bytes para el nombre del archivo
     #     x bytes para 2gs: longitud del archivo (por ahora no es necesaria) //cantidad de paquetes (dividido el tam max)
     #     2 bytes longitud [0-65535] del payload variable con tope superior
@@ -49,11 +49,11 @@ class Request(Enum):
 
     # a decidir: se manda un ack y despues el archivo o directamente el archivo?
 
-    #     payload bytes n+1 a m: contenido del archivo (solo si request es UPLOAD)
+    #     payload bytes n+1 a m: contenido del archivo (solo si type es UPLOAD)
 
 class MessageHeader:
-    def __init__(self, request: Request, file_name: str, file_size: int, payload_size: int, seq_num: int, hash:int =None):
-        self.request = request
+    def __init__(self, type: Type, file_name: str, file_size: int, payload_size: int, seq_num: int, hash:int =None):
+        self.type = type
         self.file_name = file_name
         self.file_size = file_size
         self.payload_size = payload_size
@@ -61,7 +61,7 @@ class MessageHeader:
         self.hash = hash
 
     def __str__(self):
-        representation = f"Request: {self.request}\n"
+        representation = f"Type: {self.type}\n"
         representation += f"File name: {self.file_name}\n"
         representation += f"File size: {self.file_size}\n"
         representation += f"Payload size: {self.payload_size}\n"
@@ -71,7 +71,7 @@ class MessageHeader:
 
     def hashless_bytes(self):
         lenght = len(self.file_name)
-        byte_seq = self.request.to_bytes()
+        byte_seq = self.type.to_bytes()
         byte_seq += self.file_name.encode()
         byte_seq += int(0).to_bytes(FILE_NAME_SIZE_BYTES - lenght, 'big')
         byte_seq += self.file_size.to_bytes(FILE_SIZE_BYTES, 'big')
@@ -87,15 +87,15 @@ class MessageHeader:
 
     @classmethod
     def from_bytes(self, data):
-        request = Request.new(int.from_bytes(data[:1], byteorder='big'))
-        if Error.is_error(request):
-            return request
+        type = Type.new(int.from_bytes(data[:1], byteorder='big'))
+        if Error.is_error(type):
+            return type
         file_name = data[1:FILE_NAME_SIZE_END].decode().rstrip('\x00')
         file_size = int.from_bytes(data[FILE_NAME_SIZE_END:FILE_SIZE_END], byteorder='big')
         payload_size = int.from_bytes(data[FILE_SIZE_END: PAYLOAD_SIZE_END], byteorder='big')
         seq_num = int.from_bytes(data[PAYLOAD_SIZE_END:SEQ_SIZE_END], byteorder='big')
         hash = int.from_bytes(data[SEQ_SIZE_END: HEADER_SIZE], byteorder='big')
-        return MessageHeader(request, file_name, file_size, payload_size, seq_num, hash)
+        return MessageHeader(type, file_name, file_size, payload_size, seq_num, hash)
 
 class Message:
     def __init__(self, header: MessageHeader, payload: bytearray):
@@ -107,6 +107,11 @@ class Message:
     
     def __lt__(self, other): 
         return self.header.seq_num < other.header.seq_num
+    
+    def __reduce__(self):
+        # Devuelve una tupla que contiene la función para reconstruir la instancia
+        # y los argumentos necesarios para esa función.
+        return (self.__class__, (self.header, self.payload,))
     
     def calculate_hash(self):
         header_hash = int.from_bytes(self.header.calculate_hash(), byteorder='big')
@@ -121,13 +126,13 @@ class Message:
     
 
     def acknowledge(self, sock: socket, addr):
-        ack_msg = Message.make(Request.Ack, self.header.file_name, self.header.file_size, 0, self.header.seq_num, b"")
+        ack_msg = Message.make(Type.Ack, self.header.file_name, self.header.file_size, 0, self.header.seq_num, b"")
         ack_msg.send_to(sock, addr)
 
     @classmethod
     #crea un mensaje ya hasheado
-    def make(self ,request: Request, file_name: str, file_size: int, payload_size: int, seq_num: int, payload: bytearray):
-        header = MessageHeader(request, file_name, file_size, payload_size, seq_num)
+    def make(self ,type: Type, file_name: str, file_size: int, payload_size: int, seq_num: int, payload: bytearray):
+        header = MessageHeader(type, file_name, file_size, payload_size, seq_num)
         msg = Message(header, payload)
         msg.header.hash = msg.calculate_hash()
         return msg
@@ -171,7 +176,7 @@ def hash_bytes(bytes: bytearray):
 class TestMessageHeaderMethods(unittest.TestCase):
     
     def test_parse_and_serialize(self):
-        header1 = MessageHeader(request=1, 
+        header1 = MessageHeader(type=1, 
                                file_name="test.txt", 
                                file_size=2, 
                                payload_size=2, 

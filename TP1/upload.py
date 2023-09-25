@@ -14,9 +14,9 @@ DOWN = 1
 def main():
     args = sys.argv[1:] # [1:] para omitir el nombre del script
 
-    command = Options.from_args(args, Request.Upload)
+    command = Options.from_args(args, Type.Send)
     if (command == None):
         return
-    send_file(command, 0)
+    send_file(command, 0, ("127.0.0.2", 42069))
 
 main()

@@ -1,4 +1,4 @@
-from lib.message import Request
+from lib.message import Type
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 42069
@@ -10,20 +10,20 @@ MIN_PORT = 2**10
 MAX_PORT = 2**16 -1
 
 class Options:
-    def __init__(self, request, verbosity, host, port, src, name):
-        self.request = request
+    def __init__(self, type, verbosity, host, port, src, name):
+        self.type = type
         self.verbosity = verbosity
         self.host = host
         self.port = port
         self.src = src
         self.name = name
 
-    def from_args(args, request):
+    def from_args(args, type):
         if "-h" in args or "--help" in args:
             print_help()
             return None
         
-        request = request
+        type = type
         verbosity = False
         host = DEFAULT_HOST 
         port = DEFAULT_PORT
@@ -45,7 +45,7 @@ class Options:
                 elif arg == "-n" or arg == "--name":
                     filename = set_filename(args[i + 1])
             
-        return Options(request, verbosity, host, port, src, filename)
+        return Options(type, verbosity, host, port, src, filename)
 
     def __str__(self):
         return f"UploadOptions(verbosity={self.verbosity}, host={self.host}, port={self.port}, src={self.src}, name={self.name})"
