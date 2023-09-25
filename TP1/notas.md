@@ -30,3 +30,7 @@ No importa el orden de los argumentos
 
 ## TESTS
 falta testear todo
+
+## PRIORIDAD
+    - Handshake
+    - 

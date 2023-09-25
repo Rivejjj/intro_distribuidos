@@ -31,6 +31,13 @@ class Request(Enum):
 
     def to_bytes(self):
         return self.value.to_bytes(1, 'big')
+    
+    @classmethod
+    def new(self, value):
+        try:
+            return Request(value)
+        except ValueError:
+            return Error.UnknownRequest
 
 # formato:
     #     2 bits 0: request (UPLOAD=0, DOWNLOAD=1, ack= 2, solicitud de files disponibles = 3)
@@ -52,7 +59,6 @@ class MessageHeader:
         self.payload_size = payload_size
         self.seq_num = seq_num
         self.hash = hash
-        #p ver lo de hash
 
     def __str__(self):
         representation = f"Request: {self.request}\n"
@@ -81,7 +87,9 @@ class MessageHeader:
 
     @classmethod
     def from_bytes(self, data):
-        request = int.from_bytes(data[:1], byteorder='big')
+        request = Request.new(int.from_bytes(data[:1], byteorder='big'))
+        if Error.is_error(request):
+            return request
         file_name = data[1:FILE_NAME_SIZE_END].decode().rstrip('\x00')
         file_size = int.from_bytes(data[FILE_NAME_SIZE_END:FILE_SIZE_END], byteorder='big')
         payload_size = int.from_bytes(data[FILE_SIZE_END: PAYLOAD_SIZE_END], byteorder='big')
@@ -97,54 +105,57 @@ class Message:
     def __str__(self):
         return self.header.__str__() #+ "\n payload: \n" + self.payload.hex()
     
-    #crea un mensaje ya hasheado
-    def make(request: Request, file_name: str, file_size: int, payload_size: int, seq_num: int, payload: bytearray):
-        header = MessageHeader(request, file_name, file_size, payload_size, seq_num)
-        header_hash = int.from_bytes(header.calculate_hash(), byteorder='big')
-        payload_hash = int.from_bytes(hash_bytes(payload), byteorder='big')
-        header.hash = (header_hash + payload_hash) % (2**32)
-
-        return Message(header, payload)
+    def __lt__(self, other): 
+        return self.header.seq_num < other.header.seq_num
+    
+    def calculate_hash(self):
+        header_hash = int.from_bytes(self.header.calculate_hash(), byteorder='big')
+        payload_hash = int.from_bytes(hash_bytes(self.payload), byteorder='big')
+        return (header_hash + payload_hash) % (2**32)
     
     def send_to(self, sock: socket, addr):
         #sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         bytes_to_send = self.header.to_bytes() + self.payload
         print(f"\n longitud {len(bytes_to_send)}")
         sock.sendto(bytes_to_send, addr)
-        ##sock.sendto(self.header.to_bytes(), (dest_ip, dest_port))
-        #sock.sendto(self.payload, (dest_ip, dest_port))
+    
 
     def acknowledge(self, sock: socket, addr):
         ack_msg = Message.make(Request.Ack, self.header.file_name, self.header.file_size, 0, self.header.seq_num, b"")
         ack_msg.send_to(sock, addr)
 
+    @classmethod
+    #crea un mensaje ya hasheado
+    def make(self ,request: Request, file_name: str, file_size: int, payload_size: int, seq_num: int, payload: bytearray):
+        header = MessageHeader(request, file_name, file_size, payload_size, seq_num)
+        msg = Message(header, payload)
+        msg.header.hash = msg.calculate_hash()
+        return msg
 
     @classmethod
     def from_bytes(self, data):
         header = MessageHeader.from_bytes(data[:HEADER_SIZE])
+        if Error.is_error(header):
+            header
         if header.payload_size > PAYLOAD_SIZE:
             print("Received invalid message size")
             #ver que hacer porque te pueden haber mandado lo bytes de mas en otro paquete de udp
-            return None
+            return Error.InvalidMessageSize
     
-        return Message(header, data[HEADER_SIZE:])
+        msg = Message(header, data[HEADER_SIZE:])
+        if msg.calculate_hash() != msg.header.hash:
+            return Error.CorruptedMessage
+        return msg
+
 
     @classmethod
-    def recv_from(self, socket: socket.socket):
+    def recv_from(self, sock: socket.socket):
         try:
-            datagram_payload, addr = socket.recvfrom(UDP_PAYLOAD_SIZE)
+            datagram_payload, addr = sock.recvfrom(UDP_PAYLOAD_SIZE)
         except socket.timeout:
-            return Error.RcvTimeout
+            return Error.RcvTimeout, None
 
         return Message.from_bytes(datagram_payload), addr
-# try:
-#     # Espera la respuesta durante el tiempo especificado
-#     data, addr = sock.recvfrom(1024)
-#     print("Respuesta recibida:", data.decode())
-# except socket.timeout:
-#     print("Tiempo de espera agotado. No se recibió ninguna respuesta.")
-# finally:
-#     sock.close()
 
 
 def hash_bytes(bytes: bytearray):
@@ -155,7 +166,7 @@ def hash_bytes(bytes: bytearray):
     hasher.update(bytes)
     
     # Devuelve el hash en formato de bytes
-    return hasher.digest()[:32]
+    return hasher.digest()[:4]
 
 class TestMessageHeaderMethods(unittest.TestCase):
     
@@ -177,23 +188,5 @@ class TestMessageHeaderMethods(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-    
 
-
-# 12323123- 127356832- || - 127356832-6947328741
-# palitoooooooooooooooooooo
-# 12345  - sock.send_to(header 81463 headerr 24798 header2347293847928347293847293873289487293847)
-        
-# headerUDP - askjd - hahsj - kdkjhas
-
-# headerUDP - askjdhahsjkdkjhas
-
-
-# 1273568--287 46239-87423984
-#            |
-
-
-#class Message:
-    #def __init__(self):
-        
         

@@ -1,57 +1,18 @@
 import socket
 import os
 import time
+import random
+import heapq
 from lib.message import *
 from lib.transfer_file import store_package
 from lib.errors import Error
+from lib.message import Message
 
 UDP_IP = "127.0.0.1"
 UDP_PORT = 42069
 UP = 0
 DOWN = 1
-
-class File:
-    def __init__(self, name, content):
-        self.name = name
-        self.content = content
-"""
-def parse_upload_request(message):
-    #p todo
-    file_name_length = int(message[0])
-    file_name = message[1:file_name_length+1].decode()
-    file_content_length = int(message[file_name_length+1])
-    file_content = message[file_name_length+2:].decode()
-
-
-    print(f"File name: {file_name}\nFile content:\n{file_content}")
-    return File(file_name, file_content)
-
-def init_server():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind((UDP_IP,UDP_PORT))    
-    print("The server is ready to receive")
-    #Crear un hilo x cada conexion entrante
-
-    while True:
-        data, addr = sock.recvfrom(1024)
-        #p PARSEO
-        request = int(data[0])
-
-        if request == UP:
-            file = parse_upload_request(data[1:])
-            result = store_package(file.name, file.content)
-            if result == -1:
-                print("Filed to store file {}", file)
-                # EN LUGAR DEL ACK SE MANDA ERROR PA CORTAR LA TRANSMICION
-                return # Y muere hilo de este cliente
-            sock.sendto("File uploaded successfully".encode(), addr) # envio mensaje de confirmacion              
-
-        if request == DOWN:
-            # enviar archivo al cliente
-            print("Sending file to client")
-"""
-
-        #Envio de ack
+TIMEOUT = 0.2
 
 def store_package_server(file_name, payload):
     print("entra a store package")
@@ -68,26 +29,66 @@ def store_package_server(file_name, payload):
 def serversito():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((UDP_IP,UDP_PORT))
+    sock.settimeout(TIMEOUT) #p ver este valor
     print("The server is ready to receive")
+
+    next_message = [0]
+    messages = []
     while True:
         msg, addr = Message.recv_from(sock)
-        result = handle_message(msg, addr, sock)
-        if Error.is_error(result):
-            print(f"Error: {result}")
-            break
         print(msg)
+            
+        if Error.is_error(msg):
+            if msg != Error.RcvTimeout:
+                continue
+        else:
+            if random.random() > 0.5:
+                print(f"\n Dropeamos el paquete {msg.header.seq_num}\n")
+                msg = Error.RcvTimeout
+                continue
+            heapq.heappush(messages, msg)
+        result = handle_messages(messages, next_message, addr, sock)
         
+        if Error.is_error(result):
+            print(result)
+            break
+    sock.close()
+
 def handle_upload(msg: Message, addr, sock: socket):
     result = store_package_server(msg.header.file_name, msg.payload)
     if Error.is_error(result): 
         return result
     #msg.acknowledge(sock, addr)
 
-def handle_message(msg: Message, addr, sock: socket):
-    if msg.header.request == Request.Upload.value:
+def handle_message(msg: Message, next_message, addr, sock: socket):
+    print(f"next_message[0]: {next_message[0]} > msg.header.seq_num: {msg.header.seq_num}")
+    if next_message[0] > msg.header.seq_num:
+        return Error.DupMessage
+    if msg.header.request == Request.Upload:
+        print("entro al upload")
         return handle_upload(msg, addr, sock)
 
     #if msg.header.request == Request.Download:
+
+def handle_messages(messages: list, next_message, addr, sock: socket):
+    print(messages)
+    last_handled_msg = None
+    result = None
+    while (len(messages) != 0) and (messages[0].header.seq_num <= next_message[0]):
+        print(next_message[0])
+        msg = heapq.heappop(messages)
+        result = handle_message(msg, next_message, addr, sock)
+        if Error.is_error(result):
+            if result == Error.DupMessage:
+                continue
+            break
+        next_message[0] += 1
+        last_handled_msg = msg
+    if last_handled_msg!= None:
+        last_handled_msg.acknowledge(sock, addr)
+    return result
+    
+
 
 
 def main():

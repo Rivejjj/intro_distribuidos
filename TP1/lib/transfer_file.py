@@ -2,16 +2,15 @@ import sys
 import os
 import time
 import hashlib
+import random
 from lib.message import *
 from lib.command_options import Options
 
-
-seq_num = 0
 TIMEOUT = 0.2 # A definir
 PACKAGE_TIMEOUT = 1 # A definir
-MAX_ATTEMPTS = 5
+MAX_ATTEMPTS = 10
 
-def send_file(options: Options):
+def send_file(options: Options, seq_num):
     file_size = os.path.getsize(options.src)
     if file_size > MAX_FILE_SIZE:
         print("Invalid file size")
@@ -28,22 +27,32 @@ def send_file(options: Options):
     while (read != b'') and (send_attempts < MAX_ATTEMPTS):
         message = Message.make(options.request, options.name, file_size, len(read), seq_num, read)
         print(message)
+        
+        if random.random() > 0.8:
+            message.header.seq_num = 1000
+            print(" corrompiendo un paquete")
+
         message.send_to(sock, (options.host, options.port))
         send_attempts +=1
         sent = time.time()
         while time.time() - sent < PACKAGE_TIMEOUT:
-            try: 
-                msg, addr = Message.recv_from(sock)
-            except:
+            msg, addr = Message.recv_from(sock)
+            if Error.is_error(msg):
                 continue
-            if msg.header.request == Request.Ack.value:
+            
+            if (msg.header.request == Request.Ack) and (msg.header.seq_num == seq_num):
                 send_attempts = 0
+                seq_num += 1
                 read = file.read(PAYLOAD_SIZE)
                 print("received_ack")
                 break
 
+    sock.close()
         # wait_for_ack() #si estamos en stop & wait
         
+def receive_file(options: Options):
+    print("hola")
+
 
 # def handle_msg(msg: Message):
 #     if msg.header.request == Request.Upload:
