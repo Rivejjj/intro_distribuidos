@@ -4,6 +4,7 @@ import sys
 import time
 import unittest
 import hashlib
+from multiprocessing import Queue
 from lib.errors import Error
 
 #numeros son provisorios
@@ -123,11 +124,6 @@ class Message:
         bytes_to_send = self.header.to_bytes() + self.payload
         print(f"\n longitud {len(bytes_to_send)}")
         sock.sendto(bytes_to_send, addr)
-    
-
-    def acknowledge(self, sock: socket, addr):
-        ack_msg = Message.make(Type.Ack, self.header.file_name, self.header.file_size, 0, self.header.seq_num, b"")
-        ack_msg.send_to(sock, addr)
 
     @classmethod
     #crea un mensaje ya hasheado
@@ -137,6 +133,13 @@ class Message:
         msg.header.hash = msg.calculate_hash()
         return msg
 
+    @classmethod
+    #p capas podria estar bueno pasar el nombre, capas que no
+    def send_ack(self, seq_num, sock: socket, addr):
+        ack_msg = Message.make(Type.Ack, "", 0, 0, seq_num, b"")
+        print(ack_msg)
+        ack_msg.send_to(sock, addr)
+        
     @classmethod
     def from_bytes(self, data):
         header = MessageHeader.from_bytes(data[:HEADER_SIZE])
@@ -163,15 +166,27 @@ class Message:
         return Message.from_bytes(datagram_payload), addr
 
 
-def hash_bytes(bytes: bytearray):
-    # Crea un objeto hasher SHA-256
-    hasher = hashlib.sha256()
+class Channel():
+    def __init__(self):
+        self.queue = Queue()
+
+    def __str__(self):
+        return str(self.queue)
+
+    def get(self, timeout=None):
+        try:
+            return self.queue.get(True, timeout)
+        except:
+            return Error.EmptyChannel
+        
+    def put(self, message, timeout=None):
+        try:
+            self.queue.put(message, True, timeout)
+        except:
+            return Error.FullChannel
     
-    # Actualiza el hasher con los datos
-    hasher.update(bytes)
-    
-    # Devuelve el hash en formato de bytes
-    return hasher.digest()[:4]
+    def empty(self):
+        return self.queue.empty()
 
 class TestMessageHeaderMethods(unittest.TestCase):
     
@@ -189,6 +204,18 @@ class TestMessageHeaderMethods(unittest.TestCase):
         self.assertEqual(header1.payload_size,header2.payload_size)
         self.assertEqual(header1.seq_num,header2.seq_num)
         self.assertDictEqual(vars(header1),vars(header2))
+
+
+def hash_bytes(bytes: bytearray):
+    # Crea un objeto hasher SHA-256
+    hasher = hashlib.sha256()
+    
+    # Actualiza el hasher con los datos
+    hasher.update(bytes)
+    
+    # Devuelve el hash en formato de bytes
+    return hasher.digest()[:4]
+
 
 
 if __name__ == '__main__':

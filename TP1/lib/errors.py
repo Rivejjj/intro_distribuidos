@@ -7,6 +7,8 @@ class Error(Enum):
     UnknownRequest = 4
     InvalidMessageSize = 5
     DupMessage = 6
+    EmptyChannel = 7
+    FullChannel = 8
 
     def __str__(self):
         return f"Error: {self.name}"

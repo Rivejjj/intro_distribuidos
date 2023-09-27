@@ -10,20 +10,17 @@ MIN_PORT = 2**10
 MAX_PORT = 2**16 -1
 
 class Options:
-    def __init__(self, type, verbosity, host, port, src, name):
-        self.type = type
+    def __init__(self, verbosity, addr, src, name):
         self.verbosity = verbosity
-        self.host = host
-        self.port = port
+        self.addr = addr
         self.src = src
         self.name = name
 
-    def from_args(args, type):
+    def from_args(args):
         if "-h" in args or "--help" in args:
             print_help()
             return None
         
-        type = type
         verbosity = False
         host = DEFAULT_HOST 
         port = DEFAULT_PORT
@@ -45,10 +42,10 @@ class Options:
                 elif arg == "-n" or arg == "--name":
                     filename = set_filename(args[i + 1])
             
-        return Options(type, verbosity, host, port, src, filename)
+        return Options(verbosity, (host, port), src, filename)
 
     def __str__(self):
-        return f"UploadOptions(verbosity={self.verbosity}, host={self.host}, port={self.port}, src={self.src}, name={self.name})"
+        return f"UploadOptions(verbosity={self.verbosity}, host={self.addr[0]}, port={self.addr[1]}, src={self.src}, name={self.name})"
     
 
 def print_help():
