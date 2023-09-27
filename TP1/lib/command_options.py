@@ -1,4 +1,6 @@
 from lib.message import Type
+from enum import Enum
+
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 42069
@@ -126,3 +128,177 @@ def set_filename(arg):
     print("Invalid filename.")
     return None
 
+# def print_help_upload():
+#     print("usage : upload [ - h ] [ - v | -q ] [ - H ADDR ] [ - p PORT ] [ - s FILEPATH ] [ - n FILENAME ]")
+#     print("<command description>")
+#     print("Options:")
+#     print("-h, --help            Show this help message and exit")
+#     print("-v, --verbose         Increase output verbosity")
+#     print("-q, --quiet           Decrease output verbosity")
+#     print("-H, --host ADDR       Server IP address")
+#     print("-p, --port PORT       Server port")
+#     print("-s, --src FILEPATH    Source file path")
+#     print("-n, --name FILENAME   File name")
+
+# def print_help_download():
+#     print("usage : download [ - h ] [ - v | -q ] [ - H ADDR ] [ - p PORT ] [ - d FILEPATH ] [ - n FILENAME ]")
+#     print("<command description>")
+#     print("Options:")
+#     print("-h, --help            Show this help message and exit")
+#     print("-v, --verbose         Increase output verbosity")
+#     print("-q, --quiet           Decrease output verbosity")
+#     print("-H, --host ADDR       Server IP address")
+#     print("-p, --port PORT       Server port")
+#     print("-s, --src FILEPATH    Source file path")
+#     print("-n, --name FILENAME   File name")
+
+class Arguments(Enum):
+    Helpito = 1 #help es palabra reservada
+    Verbose = 2
+    Quiet = 3
+    Host = 4
+    Port = 5
+    Src = 6
+    Name = 7
+    Dst = 8
+    Storage = 9
+
+    def print_help(self):
+        if self == Arguments.Helpito:
+            print("-h , -- help     show this help message and exit")
+        elif self == Arguments.Verbose:
+            print("-v , -- verbose  increase output verbosity")
+        elif self == Arguments.Quiet:
+            print("-q , -- quiet    decrease output verbosity")
+        elif self == Arguments.Host:
+            print("-H , -- host     server IP address")
+        elif self == Arguments.Port:
+            print("-p , -- port     server port")
+        elif self == Arguments.Src:
+            print("-s , -- src      source file path")
+        elif self == Arguments.Name:
+            print("-n , -- name     file name")
+        elif self == Arguments.Dst:
+            print("-d , -- dst      destination file path")
+        elif self == Arguments.Storage:
+            print("-s , -- storage  storage file path")
+
+    def __hash__(self):
+        return hash(str(self))
+
+    def __eq__(self, other):
+        if self.value == Arguments.Helpito.value:
+            return other == "-h" or other == "--help"
+        elif self.value == Arguments.Verbose.value:
+            return other == "-v" or other == "--verbose"
+        elif self.value == Arguments.Quiet.value:
+            return other == "-q" or other == "--quiet"
+        elif self.value == Arguments.Host.value:
+            return other == "-H" or other == "--host"
+        elif self.value == Arguments.Port.value:
+            return other == "-p" or other == "--port"
+        elif self.value == Arguments.Src.value:
+            return other == "-s" or other == "--src"
+        elif self.value == Arguments.Name.value:
+            return other == "-n" or other == "--name"
+        elif self.value == Arguments.Dst.value:
+            return other == "-d" or other == "--dst"
+        elif self.value == Arguments.Storage.value:
+            return other == "-s" or other == "--storage"
+        else:
+            return False
+    
+    def default(self):
+        if self == Arguments.Verbose:
+            return False
+        elif self == Arguments.Quiet:
+            return False
+        elif self == Arguments.Host:
+            return DEFAULT_HOST
+        elif self == Arguments.Port:
+            return DEFAULT_PORT
+        elif self == Arguments.Src:
+            return None
+        elif self == Arguments.Name:
+            return None
+        elif self == Arguments.Dst:
+            return None
+
+    def get_index(self, args):
+        if len(args) == 0:
+            return None
+        try:
+            index =  args.index(self)
+        except ValueError:
+            return None
+        return index
+    
+    def get_argument(self, args):
+        index = self.get_index(args)
+        if index == None:
+            return self.default()
+        
+        # Sin argumentos
+        if self == Arguments.Verbose:
+            return False
+        elif self == Arguments.Quiet:
+            return True
+
+        # COn argumentos
+        index += 1 # El argumento esta en la siguiente posicion
+        if index >= len(args):
+            return self.default()
+        
+        return self.valid_value(args[index])
+
+
+    def valid_value(self, arg):
+        if self == Arguments.Host:
+            return set_host(arg)
+        elif self == Arguments.Port:
+            return set_port(arg)
+        elif self == Arguments.Src:
+            return set_path(arg) # Nose porque llamabamos a set_filename pero lo dejo como esta
+        elif self == Arguments.Name: 
+            return set_filename(arg) # Nose porque llamabamos a set_filename pero lo dejo como esta
+        elif self == Arguments.Dst:
+            return set_filename(arg) # Nose porque llamabamos a set_filename pero lo dejo como esta
+        elif self == Arguments.Storage:
+            return set_filename(arg) # Nose porque llamabamos a set_filename pero lo dejo como esta
+        else:
+            return None
+
+class OptionsUpload:
+    def __init__(self, verbosity, addr, src, name):
+        self.verbosity = verbosity
+        self.addr = addr
+        self.src = src
+        self.name = name
+
+    @classmethod
+    def valid_arguments(self):
+        return {Arguments.Helpito: None, Arguments.Verbose: None, Arguments.Quiet: None, Arguments.Host: None, Arguments.Port: None, Arguments.Src: None, Arguments.Name: None}
+    
+    def from_args(args):
+        if "-h" in args or "--help" in args:
+            print_help()
+            return None
+        
+        valid_args = OptionsUpload.valid_arguments()
+        for arg in valid_args:
+            valid_args[arg] = arg.get_argument(args)
+        
+        return OptionsUpload(
+                    valid_args[Arguments.Verbose],
+                    (valid_args[Arguments.Host], valid_args[Arguments.Port]),
+                    valid_args[Arguments.Src],
+                    valid_args[Arguments.Name]
+                    )
+    
+# def main():
+#     args = sys.argv[1:] # [1:] para omitir el nombre del script
+
+#     command = OptionsUpload.from_args(args)
+#     if (command == None):
+#         return
+#     print(command)
