@@ -6,6 +6,8 @@ from lib.message import *
 from lib.transfer_file import *
 from lib.errors import Error
 from lib.message import *
+from lib.command_options import *
+
 
 UDP_IP = "127.0.0.1"
 UDP_PORT = 42069
@@ -77,6 +79,12 @@ def server():
 def main():
     #init_server()
     server()
+    # args = sys.argv[1:] # [1:] para omitir el nombre del script
+
+    # command = OptionsStartServer.from_args(args)
+    # if (command == None):
+    #     return
+    # print(command)
 
 main()
 

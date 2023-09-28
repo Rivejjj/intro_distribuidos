@@ -1,3 +1,4 @@
+import os
 from lib.message import Type
 from enum import Enum
 
@@ -152,6 +153,12 @@ def set_filename(arg):
 #     print("-s, --src FILEPATH    Source file path")
 #     print("-n, --name FILENAME   File name")
 
+# Si se aprueba esa implementacion, cambiar a nombre set_path
+def set_path_definitive(path):
+    if os.path.exists(path):
+        return path
+    return None
+
 class Arguments(Enum):
     Helpito = 1 #help es palabra reservada
     Verbose = 2
@@ -261,13 +268,13 @@ class Arguments(Enum):
         elif self == Arguments.Port:
             return set_port(arg)
         elif self == Arguments.Src:
-            return set_path(arg) # Nose porque llamabamos a set_filename pero lo dejo como esta
+            return set_path_definitive(arg) # Nose porque llamabamos a set_filename pero lo dejo como esta
         elif self == Arguments.Name: 
             return set_filename(arg) # Nose porque llamabamos a set_filename pero lo dejo como esta
         elif self == Arguments.Dst:
-            return set_filename(arg) # Nose porque llamabamos a set_filename pero lo dejo como esta
+            return set_path_definitive(arg) # Nose porque llamabamos a set_filename pero lo dejo como esta
         elif self == Arguments.Storage:
-            return set_filename(arg) # Nose porque llamabamos a set_filename pero lo dejo como esta
+            return set_path_definitive(arg) # Nose porque llamabamos a set_filename pero lo dejo como esta
         else:
             return None
 
@@ -337,7 +344,7 @@ class OptionsDownload:
                     )
 
     def __str__(self):
-        return f"UploadOptions(verbosity={self.verbosity}, host={self.addr[0]}, port={self.addr[1]}, dst={self.dst}, name={self.name})"
+        return f"OptionsDownload(verbosity={self.verbosity}, host={self.addr[0]}, port={self.addr[1]}, dst={self.dst}, name={self.name})"
 
     def download_help():
         print("usage : download [ - h ] [ - v | -q ] [ - H ADDR ] [ - p PORT ] [ - d FILEPATH ] [ - n FILENAME ]")
@@ -346,3 +353,40 @@ class OptionsDownload:
         args = OptionsDownload.valid_arguments()
         for arg in args:
             arg.print_help()
+
+class OptionsStartServer:
+    def __init__(self, verbosity, addr, storage):
+        self.verbosity = verbosity
+        self.addr = addr
+        self.storage = storage
+
+    @classmethod
+    def valid_arguments(self):
+        return {Arguments.Verbose: None, Arguments.Quiet: None, Arguments.Host: None, Arguments.Port: None, Arguments.Storage: None}
+    
+    def from_args(args):
+        if "-h" in args or "--help" in args:
+            OptionsStartServer.start_server_help()
+            return None
+        
+        valid_args = OptionsStartServer.valid_arguments()
+        for arg in valid_args:
+            valid_args[arg] = arg.get_argument(args)
+        
+        return OptionsStartServer(
+                    valid_args[Arguments.Quiet], # Porque por default es False
+                    (valid_args[Arguments.Host], valid_args[Arguments.Port]),
+                    valid_args[Arguments.Storage]
+                    )
+
+    def __str__(self):
+        return f"OptionsStartServer(verbosity={self.verbosity}, host={self.addr[0]}, port={self.addr[1]}, storage={self.storage})"
+
+    def start_server_help():
+        print("usage : download [ - h ] [ - v | -q ] [ - H ADDR ] [ - p PORT ] [ - d FILEPATH ] [ - n FILENAME ]")
+        print("<command description>")
+        print("Options:")
+        args = OptionsStartServer.valid_arguments()
+        for arg in args:
+            arg.print_help()
+
