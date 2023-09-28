@@ -182,6 +182,8 @@ class Arguments(Enum):
             print("-d , -- dst      destination file path")
         elif self == Arguments.Storage:
             print("-s , -- storage  storage file path")
+        else:
+            print(f"No help for this argument: {self}")
 
     def __hash__(self):
         return hash(str(self))
@@ -209,9 +211,9 @@ class Arguments(Enum):
             return False
     
     def default(self):
-        if self == Arguments.Verbose:
+        if self == Arguments.Quiet:
             return False
-        elif self == Arguments.Quiet:
+        if self == Arguments.Verbose:
             return False
         elif self == Arguments.Host:
             return DEFAULT_HOST
@@ -244,12 +246,13 @@ class Arguments(Enum):
         elif self == Arguments.Quiet:
             return True
 
-        # COn argumentos
+        # Con argumentos
         index += 1 # El argumento esta en la siguiente posicion
         if index >= len(args):
             return self.default()
         
-        return self.valid_value(args[index])
+        value = self.valid_value(args[index])
+        return value if value != None else self.default()
 
 
     def valid_value(self, arg):
@@ -277,11 +280,11 @@ class OptionsUpload:
 
     @classmethod
     def valid_arguments(self):
-        return {Arguments.Helpito: None, Arguments.Verbose: None, Arguments.Quiet: None, Arguments.Host: None, Arguments.Port: None, Arguments.Src: None, Arguments.Name: None}
+        return {Arguments.Verbose: None, Arguments.Quiet: None, Arguments.Host: None, Arguments.Port: None, Arguments.Src: None, Arguments.Name: None}
     
     def from_args(args):
         if "-h" in args or "--help" in args:
-            print_help()
+            OptionsUpload.upload_help()
             return None
         
         valid_args = OptionsUpload.valid_arguments()
@@ -289,16 +292,57 @@ class OptionsUpload:
             valid_args[arg] = arg.get_argument(args)
         
         return OptionsUpload(
-                    valid_args[Arguments.Verbose],
+                    valid_args[Arguments.Quiet], # Porque por default es False
                     (valid_args[Arguments.Host], valid_args[Arguments.Port]),
                     valid_args[Arguments.Src],
                     valid_args[Arguments.Name]
                     )
-    
-# def main():
-#     args = sys.argv[1:] # [1:] para omitir el nombre del script
 
-#     command = OptionsUpload.from_args(args)
-#     if (command == None):
-#         return
-#     print(command)
+    def __str__(self):
+        return f"UploadOptions(verbosity={self.verbosity}, host={self.addr[0]}, port={self.addr[1]}, src={self.src}, name={self.name})"
+
+    def upload_help():
+        print("usage : upload [ - h ] [ - v | -q ] [ - H ADDR ] [ - p PORT ] [ - s FILEPATH ] [ - n FILENAME ]")
+        print("<command description>")
+        print("Options:")
+        args = OptionsUpload.valid_arguments()
+        for arg in args:
+            arg.print_help()
+
+class OptionsDownload:
+    def __init__(self, verbosity, addr, dst, name):
+        self.verbosity = verbosity
+        self.addr = addr
+        self.dst = dst
+        self.name = name
+
+    @classmethod
+    def valid_arguments(self):
+        return {Arguments.Verbose: None, Arguments.Quiet: None, Arguments.Host: None, Arguments.Port: None, Arguments.Dst: None, Arguments.Name: None}
+    
+    def from_args(args):
+        if "-h" in args or "--help" in args:
+            OptionsDownload.download_help()
+            return None
+        
+        valid_args = OptionsDownload.valid_arguments()
+        for arg in valid_args:
+            valid_args[arg] = arg.get_argument(args)
+        
+        return OptionsDownload(
+                    valid_args[Arguments.Quiet], # Porque por default es False
+                    (valid_args[Arguments.Host], valid_args[Arguments.Port]),
+                    valid_args[Arguments.Dst],
+                    valid_args[Arguments.Name]
+                    )
+
+    def __str__(self):
+        return f"UploadOptions(verbosity={self.verbosity}, host={self.addr[0]}, port={self.addr[1]}, dst={self.dst}, name={self.name})"
+
+    def download_help():
+        print("usage : download [ - h ] [ - v | -q ] [ - H ADDR ] [ - p PORT ] [ - d FILEPATH ] [ - n FILENAME ]")
+        print("<command description>")
+        print("Options:")
+        args = OptionsDownload.valid_arguments()
+        for arg in args:
+            arg.print_help()
