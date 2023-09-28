@@ -138,7 +138,7 @@ class Message:
         return msg
 
     @classmethod
-    #p capas podria estar bueno pasar el nombre, capas que no
+    #p capas podria estar bueno pasar el nombre, capaz que no
     def send_ack(self, seq_num, sock: socket, addr):
         ack_msg = Message.make(Type.Ack, "", 0, 0, seq_num, b"")
         print(ack_msg)
