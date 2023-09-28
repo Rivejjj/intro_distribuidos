@@ -31,7 +31,8 @@ class Type(Enum):
     Sync1 = 3
     Sync2 = 4
     Sync3 = 5
-    Fin = 6   #p Posible Fin2 para su ack
+    Fin = 6   
+    FinAck = 7
 
     def to_bytes(self):
         return self.value.to_bytes(1, 'big')
@@ -152,6 +153,10 @@ class Message:
             print("Received invalid message size")
             #ver que hacer porque te pueden haber mandado lo bytes de mas en otro paquete de udp
             return Error.InvalidMessageSize
+        if header.file_size > MAX_FILE_SIZE:
+            print("Received invalid file size")
+            #ver que hacer porque te pueden haber mandado lo bytes de mas en otro paquete de udp
+            return Error.InvalidFileSize
     
         msg = Message(header, data[HEADER_SIZE:])
         if msg.calculate_hash() != msg.header.hash:

@@ -3,7 +3,7 @@ import os
 from enum import Enum
 from lib.transfer_file import *
 from lib.command_options import *
-from lib.handshake import *
+from lib.connection_edges import ConnectionStatus
 from lib.channel import Channel
 
 
@@ -22,11 +22,10 @@ def request_download(options: Options, sock: socket):
     download_request.send_to(sock ,options.addr)
 
 def download(message_receiver: Channel, options: Options, sock: socket ,finished: Channel):
-    if not attempt_connection(message_receiver ,sock, options.addr):
-        print(f"Failed to stablish connection with server addres: {options.addr}")
+    if ConnectionStatus.attempt_connection_with_server(message_receiver, sock, options.addr) != ConnectionStatus.Connected:
+        print(f"Failed to stablish connection with server address: {options.addr}")
         finished.put(None)
         return
-
     
     attempts = 0
     print(f"Voy a mandar con {options}")
@@ -37,12 +36,12 @@ def download(message_receiver: Channel, options: Options, sock: socket ,finished
         request_download(options, sock)
         msg = message_receiver.get(REQUEST_TIMEOUT)
         attempts += 1
-    options.src = "./" + options.src + "/" + options.name
-    receive_file(message_receiver, options, sock)
+    options.src = "./" + options.src + "/" + options.name     #p falta chequear que exista la carpeta
+    message_receiver.put(msg)
 
-    #p falta chequear que exista la carpeta
+    status = receive_file(message_receiver, options, sock, msg.header.file_size) 
+    status.finish_connection(message_receiver, sock, options.addr) 
 
-    #fin
     finished.put(None)
 
 def main():

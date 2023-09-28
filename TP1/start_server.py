@@ -2,12 +2,12 @@ import socket
 import os
 import time
 import random
-from lib.message import *
 from lib.transfer_file import *
 from lib.errors import Error
-from lib.message import *
+from lib.message import Type, Message
 from lib.channel import Channel
-from lib.handshake import server_three_way_handshake
+from lib.connection_edges import ConnectionStatus
+from lib.command_options import Options
 
 UDP_IP = "127.0.0.1"
 UDP_PORT = 42069
@@ -17,7 +17,8 @@ TIMEOUT = 10
 
 def handle_client(message_receiver: Channel, client_addr, server_options: Options, sock: socket, finished_channel: Channel):
     print(client_addr)
-    if not server_three_way_handshake(message_receiver, sock, client_addr):
+    status = ConnectionStatus.attempt_connection_with_client(message_receiver, sock, client_addr)
+    if status != ConnectionStatus.Connected:
         print(f"Failed to connect to Client: {client_addr}")
         finished_channel.put(client_addr)
         return
@@ -31,14 +32,15 @@ def handle_client(message_receiver: Channel, client_addr, server_options: Option
         return
     
     message_receiver.put(first_msg)
-    
     file_handling_options = Options(server_options.verbosity, client_addr, server_options.src + first_msg.header.file_name, first_msg.header.file_name) #to-do
     if first_msg.header.type == Type.Send:
-        receive_file(message_receiver, file_handling_options, sock)
+        status = receive_file(message_receiver, file_handling_options, sock, first_msg.header.file_size)
     elif first_msg.header.type == Type.Receive:
         print(f"Entre al send, le pase {file_handling_options}")
-        send_file(message_receiver, file_handling_options, sock, 0)
+        status = send_file(message_receiver, file_handling_options, sock, 0)
     #hacer fin
+    print(status)
+    status.finish_connection(message_receiver, sock, client_addr)
     finished_channel.put(client_addr)
 
 def server_init(path):

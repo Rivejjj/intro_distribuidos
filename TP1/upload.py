@@ -1,10 +1,12 @@
 import socket
 import os
+import sys
 from enum import Enum
-from lib.transfer_file import *
-from lib.command_options import *
-from lib.handshake import attempt_connection
+from lib.transfer_file import send_file, ConnectionManager
+from lib.command_options import Options
+from lib.connection_edges import ConnectionStatus
 from lib.channel import Channel
+from lib.message import Message, Error
 
 UDP_IP = "127.0.0.1"
 UDP_PORT = 42069
@@ -14,14 +16,15 @@ DOWN = 1
 TIMEOUT = 3
 
 def upload(message_receiver: Channel, options: Options, sock: socket ,finished: Channel):
-    if not attempt_connection(message_receiver, sock, options.addr):
+    if ConnectionStatus.attempt_connection_with_server(message_receiver, sock, options.addr) != ConnectionStatus.Connected:
         print(f"Failed to stablish connection with server addres: {options.addr}")
         finished.put(None)
         return
 
-    send_file(message_receiver, options, sock, 0)
-
-    #fin
+    status = send_file(message_receiver, options, sock, 0)
+    print(status)
+    status.finish_connection(message_receiver, sock, options.addr)
+    
     finished.put(None)
 
 def main():
