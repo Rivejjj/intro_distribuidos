@@ -4,7 +4,6 @@ import sys
 import time
 import unittest
 import hashlib
-from multiprocessing import Queue
 from lib.errors import Error
 
 #numeros son provisorios
@@ -29,6 +28,10 @@ class Type(Enum):
     Send = 0
     Receive = 1
     Ack = 2
+    Sync1 = 3
+    Sync2 = 4
+    Sync3 = 5
+    Fin = 6   #p Posible Fin2 para su ack
 
     def to_bytes(self):
         return self.value.to_bytes(1, 'big')
@@ -164,29 +167,6 @@ class Message:
             return Error.RcvTimeout, None
 
         return Message.from_bytes(datagram_payload), addr
-
-
-class Channel():
-    def __init__(self):
-        self.queue = Queue()
-
-    def __str__(self):
-        return str(self.queue)
-
-    def get(self, timeout=None):
-        try:
-            return self.queue.get(True, timeout)
-        except:
-            return Error.EmptyChannel
-        
-    def put(self, message, timeout=None):
-        try:
-            self.queue.put(message, True, timeout)
-        except:
-            return Error.FullChannel
-    
-    def empty(self):
-        return self.queue.empty()
 
 class TestMessageHeaderMethods(unittest.TestCase):
     

@@ -6,6 +6,8 @@ from lib.message import *
 from lib.transfer_file import *
 from lib.errors import Error
 from lib.message import *
+from lib.channel import Channel
+from lib.handshake import server_three_way_handshake
 
 UDP_IP = "127.0.0.1"
 UDP_PORT = 42069
@@ -15,7 +17,11 @@ TIMEOUT = 10
 
 def handle_client(message_receiver: Channel, client_addr, server_options: Options, sock: socket, finished_channel: Channel):
     print(client_addr)
-    #handshake
+    if not server_three_way_handshake(message_receiver, sock, client_addr):
+        print(f"Failed to connect to Client: {client_addr}")
+        finished_channel.put(client_addr)
+        return
+    
     #segund el primer mensaje hace rcv o send
     first_msg = message_receiver.get(TIMEOUT)
     if Error.is_error(first_msg):
@@ -26,11 +32,12 @@ def handle_client(message_receiver: Channel, client_addr, server_options: Option
     
     message_receiver.put(first_msg)
     
-    file_handling_options = Options(server_options.verbosity, client_addr, server_options.src + first_msg.header.file_name, first_msg.header.file_name)
+    file_handling_options = Options(server_options.verbosity, client_addr, server_options.src + first_msg.header.file_name, first_msg.header.file_name) #to-do
     if first_msg.header.type == Type.Send:
         receive_file(message_receiver, file_handling_options, sock)
-    elif first_msg == Type.Receive:
-        send_file()
+    elif first_msg.header.type == Type.Receive:
+        print(f"Entre al send, le pase {file_handling_options}")
+        send_file(message_receiver, file_handling_options, sock, 0)
     #hacer fin
     finished_channel.put(client_addr)
 
@@ -52,12 +59,9 @@ def server():
     finished_clients = Channel()
 
     while True:
-        print(clients)
-
+        #print(clients)
         msg, addr = Message.recv_from(sock)
-        i = 1
         while not finished_clients.empty():
-            i+=1
             addr = finished_clients.get()
             if clients.pop(addr).try_join():
                 print("JOINEEEEEEEEEE")
@@ -67,7 +71,6 @@ def server():
                 clients[addr] = ConnectionManager(handle_client, (addr, server_options, sock ,finished_clients))
                         #guarda cuando se corre dos veces seguidas, si no termino lo anterior hay que dropear el handshake
             clients[addr].send_message(msg) #enviar paquete x pipe a thread correspondiente
-            print(f"-------------LONGITUD DEL DICCIONARIO CLIENT: {len(clients)} --------------")
         
         
 

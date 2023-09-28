@@ -3,11 +3,10 @@ import os
 import time
 import heapq
 import threading
-from multiprocessing import Queue
-import queue
 import random
 from lib.message import *
 from lib.command_options import Options
+from lib.channel import Channel
 
 TIMEOUT = 0.2 # A definir
 PACKAGE_TIMEOUT = 2 # A definir
@@ -16,9 +15,8 @@ MAX_ATTEMPTS = 10
 
 class ConnectionManager:
     def __init__(self, conection_function, args):
-        channel = Channel()
-        self.channel = channel
-        self.join_handle = threading.Thread(target=conection_function, args=(channel,) + args)
+        self.channel = Channel()
+        self.join_handle = threading.Thread(target=conection_function, args=(self.channel,) + args)
         self.join_handle.start()
         print("--------------SE SPAWNEA THREAD-----------")
     
@@ -56,7 +54,6 @@ def send_file(message_receiver: Channel, options: Options, sock: socket, seq_num
             print(" corrompiendo un paquete")
 
         message.send_to(sock, options.addr)
-        send_attempts +=1
         sent = time.time()
         while time.time() - sent < PACKAGE_TIMEOUT:
             msg = message_receiver.get(PACKAGE_TIMEOUT - (time.time() - sent))
@@ -64,7 +61,6 @@ def send_file(message_receiver: Channel, options: Options, sock: socket, seq_num
                 continue
         
             if (msg.header.type == Type.Ack) and (msg.header.seq_num == seq_num + 1):
-                send_attempts = 0
                 seq_num += 1
                 read = file.read(PAYLOAD_SIZE)
                 print("received_ack")
@@ -72,10 +68,7 @@ def send_file(message_receiver: Channel, options: Options, sock: socket, seq_num
         # wait_for_ack() #si estamos en stop & wait
 
 def receive_file(message_receiver: Channel, options: Options, sock: socket):
-    #sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    #sock.bind((UDP_IP,UDP_PORT))
-    #sock.settimeout(TIMEOUT) #p ver este valor
-    print("The server is ready to receive")
+    print("Im ready to receive")
 
     next_message = [0]
     messages = []
@@ -83,6 +76,7 @@ def receive_file(message_receiver: Channel, options: Options, sock: socket):
 
     while True:
         msg = message_receiver.get(RECEIVE_TIMEOUT)
+        print(msg)
         if Error.is_error(msg):
             break
         if random.random() > 0.5:
