@@ -1,8 +1,6 @@
 # PROHIBIDO HACER ONELINERS
 
 ## PREGUNTAS EN CLASE
-libreria UNITEST
-El ack de la solicitud: se devuelve un ack despues de la solicitud o directamente el archivo
 
 ## Args
 No importa el orden de los argumentos 
@@ -30,7 +28,8 @@ No importa el orden de los argumentos
 
 ## TESTS
 falta testear todo
+Test perdida de handshake
 
 ## PRIORIDAD
     - Handshake
-    - 
+    - FIN

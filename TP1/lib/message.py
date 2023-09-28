@@ -126,7 +126,7 @@ class Message:
         #sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         bytes_to_send = self.header.to_bytes() + self.payload
         print(f"\n longitud {len(bytes_to_send)}")
-        sock.sendto(bytes_to_send, addr)
+        sock.sendto(bytes_to_send, addr)                                #p handelear la excepcion
 
     @classmethod
     #crea un mensaje ya hasheado
