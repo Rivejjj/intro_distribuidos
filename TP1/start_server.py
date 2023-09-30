@@ -59,7 +59,7 @@ def server():
     sock.settimeout(TIMEOUT)
     clients = {}
     finished_clients = Channel()
-
+    print("Server is running")
     while True:
         #print(clients)
         msg, addr = Message.recv_from(sock)

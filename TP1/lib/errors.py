@@ -10,6 +10,9 @@ class Error(Enum):
     DupMessage = 7
     EmptyChannel = 8
     FullChannel = 9
+    WindowFull = 10
+    InvalidSeqNum = 11
+    TooManyDupAck = 12
 
 
     def __str__(self):
