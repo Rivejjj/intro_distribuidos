@@ -9,6 +9,7 @@ from lib.message import Type, Message
 from lib.channel import Channel
 from lib.connection_edges import ConnectionStatus
 from lib.command_options import Options
+from lib.file_controller import FileController
 
 UDP_IP = "127.0.0.1"
 UDP_PORT = 42069
@@ -16,7 +17,7 @@ UP = 0
 DOWN = 1
 TIMEOUT = 10
 
-def handle_client(message_receiver: Channel, client_addr, server_options: Options, sock: socket, finished_channel: Channel):
+def handle_client(message_receiver: Channel, client_addr, server_options: Options, sock: socket, controller: FileController,finished_channel: Channel):
     print(client_addr)
     status = ConnectionStatus.attempt_connection_with_client(message_receiver, sock, client_addr)
     if status != ConnectionStatus.Connected:
@@ -35,48 +36,58 @@ def handle_client(message_receiver: Channel, client_addr, server_options: Option
     message_receiver.put(first_msg)
     file_handling_options = Options(server_options.verbosity, client_addr, server_options.src + first_msg.header.file_name, first_msg.header.file_name, server_options.window_size) #to-do
     if first_msg.header.type == Type.Send:
-        status = receive_file(message_receiver, file_handling_options, sock, first_msg.header.file_size)
+        file = controller.try_write_lock(file_handling_options.src)
+        if not Error.is_error(file):
+            status = receive_file(message_receiver, file_handling_options, sock, first_msg.header.file_size, file)
+            controller.release_write_lock(file)
+    
     elif first_msg.header.type == Type.Receive:
-        print(f"Entre al send, le pase {file_handling_options}")
-        status = send_file(message_receiver, file_handling_options, sock, 0)
+        file = controller.try_read_lock(file_handling_options.src)
+        if not Error.is_error(file):
+            status = send_file(message_receiver, file_handling_options, sock, 0,file)
+            controller.release_read_lock(file)
     #hacer fin
     print(status)
     status.finish_connection(message_receiver, sock, client_addr)
     finished_channel.put(client_addr)
 
-def server_init(addr):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(addr)
-    sock.settimeout(TIMEOUT)
-    return sock
-
-def server(end_of_program: Channel):
-    args = sys.argv[1:] # [1:] para omitir el nombre del script
+def server_init():
+    args = sys.argv[1:]
     server_options = Options.server_from_args(args)
     print(server_options)
     if (server_options == None) or (Error.is_error(server_options)):
         return
-    # server_options = Options(True, (UDP_IP,UDP_PORT), './server_files/', None)
-    
-    
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(server_options.addr)
+    sock.settimeout(TIMEOUT)
+
     clients = {}
     finished_clients = Channel()
-    sock = server_init(server_options.addr)
+    controller = FileController()
+
+    return server_options, sock, clients, finished_clients, controller
+
+def server(end_of_program: Channel):
+     # [1:] para omitir el nombre del script
+    # server_options = Options(True, (UDP_IP,UDP_PORT), './server_files/', None)
+    
+    server_options, sock, clients, finished_clients, controller = server_init()
     print("Server is running")
     running = True
     while running:
         msg, addr = Message.recv_from(sock)
+        #print(f"me llego mensaje de tipo {msg.header.type} de {addr}")
         while not finished_clients.empty():
-            addr = finished_clients.get()
-            if clients.pop(addr).try_join():
+            finished_addr = finished_clients.get()
+            if clients.pop(finished_addr).try_join():
                 print("JOINEEEEEEEEEE")
 
         if not Error.is_error(msg):
             if clients.get(addr, None) == None and end_of_program.empty():
-                clients[addr] = ConnectionManager(handle_client, (addr, server_options, sock ,finished_clients))
+                clients[addr] = ConnectionManager(handle_client, (addr, server_options, sock ,controller, finished_clients))
                         #guarda cuando se corre dos veces seguidas, si no termino lo anterior hay que dropear el handshake
             clients[addr].send_message(msg) #enviar paquete x pipe a thread correspondiente
-        if not end_of_program.empty() and len(clients) <= 0:
+        if not end_of_program.empty() and len(clients) == 0:
             running = False
         
     sock.close()

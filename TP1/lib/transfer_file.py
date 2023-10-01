@@ -149,9 +149,9 @@ class Window:
         if self.last_ack == self.amount_of_packages:
             return True
         return False
-
+    
 #selective 
-def send_file(message_receiver: Channel, options: Options, sock: socket, seq_num)->ConnectionStatus:
+def send_file(message_receiver: Channel, options: Options, sock: socket, seq_num,file)->ConnectionStatus:
     print("entre a send")
     file_size = os.path.getsize(options.src)
     if file_size > MAX_FILE_SIZE:
@@ -159,7 +159,6 @@ def send_file(message_receiver: Channel, options: Options, sock: socket, seq_num
         return ConnectionStatus.Connected
     
     window = Window(options.window_size, file_size)
-    file = open(options.src, "rb")
     read = file.read(PAYLOAD_SIZE)
     
     while not window.finished():
@@ -184,14 +183,14 @@ def send_file(message_receiver: Channel, options: Options, sock: socket, seq_num
             return ConnectionStatus.ConnectionLost
     return ConnectionStatus.Connected
             
-def receive_file(message_receiver: Channel, options: Options, sock: socket, expected_file_size)->ConnectionStatus:
+def receive_file(message_receiver: Channel, options: Options, sock: socket, expected_file_size, file)->ConnectionStatus:
     print("Im ready to receive")
+    status = ConnectionStatus.Connected
     
     next_message = [0]
     bytes_received = [0]
     messages = []
     last_usefull_package_time = time.time()
-    status = ConnectionStatus.Connected
     
     while time.time() - last_usefull_package_time < RECEIVE_TIMEOUT:
         msg = message_receiver.get(RECEIVE_TIMEOUT - (time.time() - last_usefull_package_time))
@@ -202,33 +201,33 @@ def receive_file(message_receiver: Channel, options: Options, sock: socket, expe
             print("ME LLEGO EL PRIMER FIN LOCO")
             status = ConnectionStatus.FinRequested
             break
-        if random.random() >= 0.5:
+        if random.random() >= 0.1:
             heapq.heappush(messages, msg)
         else:
             print(f"\n Dropeamos el paquete {msg.header.seq_num}\n")
             continue
 
-        increased_bytes = handle_send_type_messages(messages, next_message, bytes_received, expected_file_size, options, sock)
+        increased_bytes = handle_send_type_messages(messages, file, next_message, bytes_received, expected_file_size, options, sock)
         if Error.is_error(increased_bytes):
-            status = ConnectionStatus.ConnectionLost
+            status = ConnectionStatus.Connected
             break
         if increased_bytes:
             last_usefull_package_time = time.time()
 
-    if not (bytes_received[0] == expected_file_size):
+    if (not bytes_received[0] == expected_file_size) or (expected_file_size == 0):  
         remove_file(options.src)
         print("Failed to download File")
         
     return status
 
-def handle_send_type_messages(messages: list, next_message, bytes_received, expected_file_size, options: Options,sock: socket):
+def handle_send_type_messages(messages: list, file, next_message, bytes_received, expected_file_size, options: Options,sock: socket):
     increased_bytes = False
     while (len(messages) != 0) and (messages[0].header.seq_num <= next_message[0]):
         msg = heapq.heappop(messages)
         if msg.header.type != Type.Send:
             continue
         if (msg.header.seq_num == next_message[0]) and (bytes_received[0] + msg.header.payload_size <= expected_file_size):
-            stored = store_package(options.src, msg.payload, msg.header.seq_num)
+            stored = store_package(file, options.src, msg.payload)
             if Error.is_error(stored):
                 return stored
             bytes_received[0] += stored
@@ -239,15 +238,17 @@ def handle_send_type_messages(messages: list, next_message, bytes_received, expe
     print(f"mande ack a {options.addr}")
     return increased_bytes
 
-def store_package(path, data: bytearray, seq_num):
-    print(f"Storing file in {path}")
-    open_flag = 'ab'
-    if seq_num == 0:
-        open_flag = 'wb'
+def try_open_file(path, flag):
     try:
-        with open(path, open_flag) as file:
-            file.write(data)
+        return open(path, flag) 
     except OSError:
+        return Error.OpeningFile
+
+def store_package(file, path, data: bytearray):
+    print(f"Storing file in {path}")
+    try:
+        file.write(data)
+    except :
         return Error.ErrorStoringData
     return len(data)
     

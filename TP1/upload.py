@@ -2,7 +2,7 @@ import socket
 import os
 import sys
 from enum import Enum
-from lib.transfer_file import send_file, ConnectionManager
+from lib.transfer_file import *
 from lib.command_options import Options
 from lib.connection_edges import ConnectionStatus
 from lib.channel import Channel
@@ -16,12 +16,16 @@ DOWN = 1
 TIMEOUT = 3
 
 def upload(message_receiver: Channel, options: Options, sock: socket ,finished: Channel):
-    if ConnectionStatus.attempt_connection_with_server(message_receiver, sock, options.addr) != ConnectionStatus.Connected:
+    status = ConnectionStatus.attempt_connection_with_server(message_receiver, sock, options.addr)
+    if status != ConnectionStatus.Connected:
         print(f"Failed to stablish connection with server addres: {options.addr}")
         finished.put(None)
         return
-
-    status = send_file(message_receiver, options, sock, 0)
+    file = try_open_file(options.src, "rb")
+    if not Error.is_error(file):
+        status = send_file(message_receiver, options, sock, 0, file)
+        file.close()
+        
     print(status)
     status.finish_connection(message_receiver, sock, options.addr)
     

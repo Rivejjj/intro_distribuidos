@@ -22,7 +22,8 @@ def request_download(options: Options, sock: socket):
     download_request.send_to(sock ,options.addr)
 
 def download(message_receiver: Channel, options: Options, sock: socket ,finished: Channel):
-    if ConnectionStatus.attempt_connection_with_server(message_receiver, sock, options.addr) != ConnectionStatus.Connected:
+    status = ConnectionStatus.attempt_connection_with_server(message_receiver, sock, options.addr)
+    if  status != ConnectionStatus.Connected:
         print(f"Failed to stablish connection with server address: {options.addr}")
         finished.put(None)
         return
@@ -41,7 +42,14 @@ def download(message_receiver: Channel, options: Options, sock: socket ,finished
         options.src = "./" + options.src + "/" + options.name     #p falta chequear que exista la carpeta
         message_receiver.put(msg)
 
-        status = receive_file(message_receiver, options, sock, msg.header.file_size) 
+        file = try_open_file(options.src, "wb")
+        
+        if not Error.is_error(file):
+            status = receive_file(message_receiver, options, sock, msg.header.file_size,file)
+            file.close()
+        else:
+            remove_file(options.src)
+
         status.finish_connection(message_receiver, sock, options.addr) 
 
     finished.put(None)

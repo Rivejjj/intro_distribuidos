@@ -15,6 +15,10 @@ class Error(Enum):
     TooManyDupAck = 12
     CreatingStorage = 13
     InvalidArgs = 14
+    CannotReadFromFile = 15
+    CannotWriteFile = 16
+    ErrorSharingData = 17
+    FileDoesNotExist = 18
 
 
     def __str__(self):
