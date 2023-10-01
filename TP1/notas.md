@@ -39,6 +39,8 @@ Default stop and wait
 3- comcast
 3- wireshark 
 
+4- que te agarre una direccion disponible
+
 
 
 

@@ -2,6 +2,7 @@ import socket
 import os
 import time
 import random
+import threading
 from lib.transfer_file import *
 from lib.errors import Error
 from lib.message import Type, Message
@@ -49,7 +50,7 @@ def server_init(addr):
     sock.settimeout(TIMEOUT)
     return sock
 
-def server():
+def server(end_of_program: Channel):
     args = sys.argv[1:] # [1:] para omitir el nombre del script
     server_options = Options.server_from_args(args)
     print(server_options)
@@ -62,8 +63,8 @@ def server():
     finished_clients = Channel()
     sock = server_init(server_options.addr)
     print("Server is running")
-    while True:
-        #print(clients)
+    running = True
+    while running:
         msg, addr = Message.recv_from(sock)
         while not finished_clients.empty():
             addr = finished_clients.get()
@@ -71,43 +72,39 @@ def server():
                 print("JOINEEEEEEEEEE")
 
         if not Error.is_error(msg):
-            if clients.get(addr, None) == None:
+            if clients.get(addr, None) == None and end_of_program.empty():
                 clients[addr] = ConnectionManager(handle_client, (addr, server_options, sock ,finished_clients))
                         #guarda cuando se corre dos veces seguidas, si no termino lo anterior hay que dropear el handshake
             clients[addr].send_message(msg) #enviar paquete x pipe a thread correspondiente
+        if not end_of_program.empty() and len(clients) <= 0:
+            running = False
         
-        
+    sock.close()
 
-    #sock.close()
 
 
 def main():
     #init_server()
-    server()
+    print("HOLA")
+    finish = Channel()
+    join_handle = threading.Thread(target=server, args=(finish,))
+    print("COMO ANDAS")
+    join_handle.start()
+    print("2CHAU")
+    end_of_program = False
+    while not end_of_program:
+        print("entro a l while")
+        try:
+            input("input:")
+        except EOFError as e:
+            finish.put(e)
+            print("CTRL DDDDDDDDDDDDDDDDDDDDDDDDDD")
+            end_of_program = True
+
+    join_handle.join()
+
 
 main()
-
-
-
-# import socket
-
-# # Crea un socket UDP
-# sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-# # Establece un tiempo de espera en segundos
-# timeout = 5
-
-# try:
-#     # Espera la respuesta durante el tiempo especificado
-#     sock.settimeout(timeout)
-#     data, addr = sock.recvfrom(1024)
-#     print("Respuesta recibida:", data.decode())
-# except socket.timeout:
-#     print("Tiempo de espera agotado. No se recibió ninguna respuesta.")
-# finally:
-#     sock.close()
-
-
 
 
 

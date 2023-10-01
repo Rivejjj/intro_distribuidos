@@ -33,6 +33,9 @@ class ConnectionManager:
             self.join_handle.join()
             return True
         return False
+    
+    def join(self):
+        return self.join_handle.join()
 
     def send_message(self, msg: Message):
         self.channel.put(msg)
