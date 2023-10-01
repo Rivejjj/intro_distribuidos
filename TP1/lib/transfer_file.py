@@ -226,7 +226,7 @@ def handle_send_type_messages(messages: list, next_message, bytes_received, expe
         if msg.header.type != Type.Send:
             continue
         if (msg.header.seq_num == next_message[0]) and (bytes_received[0] + msg.header.payload_size <= expected_file_size):
-            stored = store_package(options.src, msg.payload)
+            stored = store_package(options.src, msg.payload, msg.header.seq_num)
             if Error.is_error(stored):
                 return stored
             bytes_received[0] += stored
@@ -237,10 +237,13 @@ def handle_send_type_messages(messages: list, next_message, bytes_received, expe
     print(f"mande ack a {options.addr}")
     return increased_bytes
 
-def store_package(path, data: bytearray):
+def store_package(path, data: bytearray, seq_num):
     print(f"Storing file in {path}")
+    open_flag = 'ab'
+    if seq_num == 0:
+        open_flag = 'wb'
     try:
-        with open(path, 'ab') as file:
+        with open(path, open_flag) as file:
             file.write(data)
     except OSError:
         return Error.ErrorStoringData

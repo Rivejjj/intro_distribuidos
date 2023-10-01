@@ -27,18 +27,31 @@ Default stop and wait
     Contenido del archivo (solo si request es UPLOAD)
 
 ## TESTS
-comcast
-wireshark 
-revistar todas las constantes (timeout, header, etc)
-falta testear todo
-Test perdida de handshake
-agregar el window al send
-que pasa si subis directorios
-tests options
-barra descarga
-nombre de archivos repetidos en sv, que se hace?
-interrupcion de descarga/subida
-Aclarar que != usuarios no pueden subir disitnas cosas
+
+### Necesario
+1- nombre de archivos repetidos en sv, que se hace? -reemplazar
+1- interrupcion de descarga/subida                  -descarta_lo_guardado
+1- graceful_finish_server                           -en algun momento del ciclo del while chequear la terminal (esperar a los demas threads)
+1- revistar todas las constantes (timeout, header, etc)
+
+2- falta testear todo(no necesariamente tests de codigo, Test perdida de handshake, tests options, que pasa si subis directorios)
+
+3- comcast
+3- wireshark 
+
+
+
+
+### Lujo
 Servidor ofrece lo que esta subido
-append del filename en el src 
+barra descarga
+agregar el nombre del usuario como "carpeta"
+Aclarar que != usuarios no pueden subir disitnas cosas 
+
+## ultra shanpan
+appendear un header a llos archivos para hacer continuacion de descarga
+
+
+## DONE
+agregar el window al send
 ## PRIORIDAD
