@@ -30,8 +30,8 @@ def upload(message_receiver: Channel, options: Options, sock: socket ,finished: 
 def main():
     args = sys.argv[1:] # [1:] para omitir el nombre del script
 
-    command = Options.from_args(args)
-    if (command == None):
+    command = Options.upload_from_args(args)
+    if (Error.is_error(command)) or (command == None):
         return
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(("127.0.0.2", 42069))

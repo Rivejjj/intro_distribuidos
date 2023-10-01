@@ -4,7 +4,7 @@
 
 ## Args
 No importa el orden de los argumentos 
-
+Default stop and wait
 
 ## Header
 ### V1
@@ -27,9 +27,18 @@ No importa el orden de los argumentos
     Contenido del archivo (solo si request es UPLOAD)
 
 ## TESTS
+comcast
+wireshark 
+revistar todas las constantes (timeout, header, etc)
 falta testear todo
 Test perdida de handshake
-
+agregar el window al send
+que pasa si subis directorios
+tests options
+barra descarga
+nombre de archivos repetidos en sv, que se hace?
+interrupcion de descarga/subida
+Aclarar que != usuarios no pueden subir disitnas cosas
+Servidor ofrece lo que esta subido
+append del filename en el src 
 ## PRIORIDAD
-    - Handshake
-    - FIN

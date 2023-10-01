@@ -43,22 +43,24 @@ def handle_client(message_receiver: Channel, client_addr, server_options: Option
     status.finish_connection(message_receiver, sock, client_addr)
     finished_channel.put(client_addr)
 
-def server_init(path):
-    if not os.path.exists(path):
-        try:
-            os.mkdir(path)
-        except OSError: 
-            print("fue el OS")
-            return Error.ErrorStoringData
+def server_init(addr):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(addr)
+    sock.settimeout(TIMEOUT)
+    return sock
 
 def server():
-    server_options = Options(True, (UDP_IP,UDP_PORT), './server_files/', None)
-    server_init(server_options.src)
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(server_options.addr)
-    sock.settimeout(TIMEOUT)
+    args = sys.argv[1:] # [1:] para omitir el nombre del script
+    server_options = Options.server_from_args(args)
+    print(server_options)
+    if (server_options == None) or (Error.is_error(server_options)):
+        return
+    # server_options = Options(True, (UDP_IP,UDP_PORT), './server_files/', None)
+    
+    
     clients = {}
     finished_clients = Channel()
+    sock = server_init(server_options.addr)
     print("Server is running")
     while True:
         #print(clients)

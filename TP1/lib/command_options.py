@@ -1,3 +1,5 @@
+import os
+from lib.errors import Error
 from lib.message import Type
 
 DEFAULT_HOST = "127.0.0.1"
@@ -8,24 +10,29 @@ MAX_IPV6 = 2**16 -1
 IPV6_SECTIONS = 8
 MIN_PORT = 2**10 
 MAX_PORT = 2**16 -1
+DEFAULT_WINDOW_SIZE = 1
+DEFAULT_STORAGE_PATH = "./server_files/"
 
 class Options:
-    def __init__(self, verbosity, addr, src, name):
+    def __init__(self, verbosity, addr, src, name=None, window_size=None):
         self.verbosity = verbosity
         self.addr = addr
         self.src = src
         self.name = name
+        self.window_size = window_size # -w 
 
-    def from_args(args):
+    @classmethod
+    def upload_from_args(self, args):
         if "-h" in args or "--help" in args:
-            print_help()
+            print_upload_help()
             return None
         
         verbosity = False
-        host = DEFAULT_HOST 
-        port = DEFAULT_PORT
+        host = DEFAULT_HOST
+        port = DEFAULT_PORT 
         src = None
-        filename = "nombre que se yo" #p ver
+        filename = None
+        window_size = DEFAULT_WINDOW_SIZE
         
         for i, arg in enumerate(args):
             if arg == "-q" or arg == "--quiet":
@@ -34,22 +41,89 @@ class Options:
                 verbosity = True
             elif i + 1 < len(args):
                 if arg == "-H" or arg == "--host":
-                    host = set_host(args[i + 1])
+                    host = validate_host(args[i + 1])
                 elif arg == "-p" or arg == "--port":
-                    port = set_port(args[i + 1])
+                    port = validate_port(args[i + 1])
                 elif arg == "-s" or arg == "--src":
-                    src = set_filename(args[i + 1])
+                    src = validate_file_path(args[i + 1])
                 elif arg == "-n" or arg == "--name":
-                    filename = set_filename(args[i + 1])
+                    filename = validate_filename(args[i + 1])
+                elif arg == "-w" or arg == "--window":
+                    window_size = validate_window_size(args[i + 1])
+        if src == None:
+            return Error.InvalidArgs
+        if filename == None:
+            filename = os.path.basename(src)
+
+        return Options(verbosity, (host, port), src, filename, window_size)
+
+    @classmethod
+    def download_from_args(self, args):
+        if "-h" in args or "--help" in args:
+            print_download_help()
+            return None
+        
+        verbosity = False
+        host = DEFAULT_HOST
+        port = DEFAULT_PORT 
+        dest = None
+        filename = None
+        
+        for i, arg in enumerate(args):
+            if arg == "-q" or arg == "--quiet":
+                verbosity = False
+            elif arg == "-v" or arg == "--verbose":
+                verbosity = True
+            elif i + 1 < len(args):
+                if arg == "-H" or arg == "--host":
+                    host = validate_host(args[i + 1])
+                elif arg == "-p" or arg == "--port":
+                    port = validate_port(args[i + 1])
+                elif arg == "-d" or arg == "--dst":
+                    dest = validate_directory_path(args[i + 1])
+                elif arg == "-n" or arg == "--name":
+                    filename = validate_filename(args[i + 1])
+        if dest == None or filename == None:
+            return Error.InvalidArgs
             
-        return Options(verbosity, (host, port), src, filename)
+        return Options(verbosity, (host, port), dest, filename)
+
+    @classmethod
+    def server_from_args(self, args):
+        if "-h" in args or "--help" in args:
+            print_server_help()
+            return None
+        
+        verbosity = False
+        host = DEFAULT_HOST
+        port = DEFAULT_PORT
+        storage = None
+        window_size = DEFAULT_WINDOW_SIZE
+        
+        for i, arg in enumerate(args):
+            if arg == "-q" or arg == "--quiet":
+                verbosity = False
+            elif arg == "-v" or arg == "--verbose":
+                verbosity = True
+            elif i + 1 < len(args):
+                if arg == "-H" or arg == "--host":
+                    host = validate_host(args[i + 1])
+                elif arg == "-p" or arg == "--port":
+                    port = validate_port(args[i + 1])
+                elif arg == "-s" or arg == "--storage":
+                    storage = validate_directory_path(args[i + 1])
+                elif arg == "-w" or arg == "--window":
+                    window_size = validate_window_size(args[i + 1])
+        if storage == None:
+            storage = create_dir(DEFAULT_STORAGE_PATH)
+            
+        return Options(verbosity, (host, port), storage, window_size=window_size)
+
 
     def __str__(self):
-        return f"UploadOptions(verbosity={self.verbosity}, host={self.addr[0]}, port={self.addr[1]}, src={self.src}, name={self.name})"
-    
+        return f"UploadOptions(verbosity={self.verbosity}, host={self.addr[0]}, port={self.addr[1]}, src={self.src}, name={self.name}, window_size={self.window_size})"
 
-def print_help():
-    print("usage : upload [ - h ] [ - v | -q ] [ - H ADDR ] [ - p PORT ] [ - s FILEPATH ] [ - n FILENAME ]")
+def print_generic_help():
     print("<command description>")
     print("Options:")
     print("-h, --help            Show this help message and exit")
@@ -57,8 +131,25 @@ def print_help():
     print("-q, --quiet           Decrease output verbosity")
     print("-H, --host ADDR       Server IP address")
     print("-p, --port PORT       Server port")
-    print("-s, --src FILEPATH    Source file path")
+
+def print_upload_help():
+    print("usage : upload [ - h ] [ - v | -q ] [ - H ADDR ] [ - p PORT ] [ - s FILEPATH ] [ - n FILENAME ] [-w NUMBER]")
+    print_generic_help()
     print("-n, --name FILENAME   File name")
+    print("-s, --src FILEPATH          Source file path")
+    print("-w, --window WINDOW SIZE    Window size")
+    
+def print_download_help():
+    print("usage : download [ - h ] [ - v | -q ] [ - H ADDR ] [ - p PORT ] [ - d FILEPATH ] [ - n FILENAME ]")
+    print_generic_help()
+    print("-n, --name FILENAME   File name")
+    print("-d , --dst destination file path")
+
+def print_server_help():
+    print("usage : start - server [ - h ] [ - v | -q ] [ - H ADDR ] [ - p PORT ] [ - s DIRPATH ] [-w NUMBER]")
+    print_generic_help()
+    print("-s , --storage storage dir path")
+    print("-w, --window WINDOW SIZE    Window size")
 
 def is_invalid_ip_segment(str, max_ip):
     base = 16
@@ -97,14 +188,14 @@ def is_ip(str):
 def is_not_command(arg):
     return arg not in { "-h","-v","-q","-H","-p","-s" ,"-n"}
     
-def set_host(arg):
+def validate_host(arg):
     if is_ip(arg):
         return arg
     else: 
         print("Invalid host, using default port.")
         return DEFAULT_HOST
 
-def set_port(arg):
+def validate_port(arg):
     try:
         port = int(arg)
         if port >= MIN_PORT and port <= MAX_PORT:
@@ -113,16 +204,36 @@ def set_port(arg):
         print("Invalid port, using default port.")
         return DEFAULT_PORT
     
-
-def set_path(arg):
-    if is_not_command(arg) and ('/' in arg):
-        return arg
-    print("Invalid path.")
-    return None
-
-def set_filename(arg):
+def validate_filename(arg):
     if is_not_command(arg):
         return arg
-    print("Invalid filename.")
+    print("Invalid filename, using last part of path.")
     return None
 
+
+def validate_file_path(path):
+    if os.path.exists(path) and os.path.isfile(path):
+        return path
+    return None 
+
+def validate_directory_path(path):
+    if os.path.exists(path) and os.path.isdir(path):
+        return path
+    return None
+
+def validate_window_size(size):
+    try:
+        if int(size) > 0:
+            return size
+    except ValueError:
+        print("Invalid window size, using default window size.")
+    return DEFAULT_WINDOW_SIZE
+
+def create_dir(path):
+    if not os.path.exists(path):
+        try:
+            os.mkdir(path)
+        except OSError: 
+            print("fue el OS")
+            return Error.CreatingStorage
+    return path

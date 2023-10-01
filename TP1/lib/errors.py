@@ -13,6 +13,8 @@ class Error(Enum):
     WindowFull = 10
     InvalidSeqNum = 11
     TooManyDupAck = 12
+    CreatingStorage = 13
+    InvalidArgs = 14
 
 
     def __str__(self):
