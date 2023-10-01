@@ -213,11 +213,10 @@ def receive_file(message_receiver: Channel, options: Options, sock: socket, expe
             last_usefull_package_time = time.time()
 
     if not (bytes_received[0] == expected_file_size):
+        remove_file(options.src)
         print("Failed to download File")
         
-        #hacer algo de los archivos corruptos si pinta
     return status
-    
 
 def handle_send_type_messages(messages: list, next_message, bytes_received, expected_file_size, options: Options,sock: socket):
     increased_bytes = False
@@ -248,3 +247,9 @@ def store_package(path, data: bytearray, seq_num):
     except OSError:
         return Error.ErrorStoringData
     return len(data)
+    
+def remove_file(path):
+    try: 
+        os.remove(path)
+    except:
+        print("Failed to remove corrupted file")
