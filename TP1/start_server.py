@@ -32,7 +32,7 @@ def handle_client(message_receiver: Channel, client_addr, server_options: Option
         return
     
     message_receiver.put(first_msg)
-    file_handling_options = Options(server_options.verbosity, client_addr, server_options.src + first_msg.header.file_name, first_msg.header.file_name) #to-do
+    file_handling_options = Options(server_options.verbosity, client_addr, server_options.src + first_msg.header.file_name, first_msg.header.file_name, server_options.window_size) #to-do
     if first_msg.header.type == Type.Send:
         status = receive_file(message_receiver, file_handling_options, sock, first_msg.header.file_size)
     elif first_msg.header.type == Type.Receive:

@@ -223,7 +223,8 @@ def validate_directory_path(path):
 
 def validate_window_size(size):
     try:
-        if int(size) > 0:
+        size = int(size)
+        if size > 0:
             return size
     except ValueError:
         print("Invalid window size, using default window size.")

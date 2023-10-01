@@ -36,11 +36,13 @@ def download(message_receiver: Channel, options: Options, sock: socket ,finished
         request_download(options, sock)
         msg = message_receiver.get(REQUEST_TIMEOUT)
         attempts += 1
-    options.src = "./" + options.src + "/" + options.name     #p falta chequear que exista la carpeta
-    message_receiver.put(msg)
+    
+    if not Error.is_error(msg):
+        options.src = "./" + options.src + "/" + options.name     #p falta chequear que exista la carpeta
+        message_receiver.put(msg)
 
-    status = receive_file(message_receiver, options, sock, msg.header.file_size) 
-    status.finish_connection(message_receiver, sock, options.addr) 
+        status = receive_file(message_receiver, options, sock, msg.header.file_size) 
+        status.finish_connection(message_receiver, sock, options.addr) 
 
     finished.put(None)
 

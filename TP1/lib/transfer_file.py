@@ -154,8 +154,8 @@ def send_file(message_receiver: Channel, options: Options, sock: socket, seq_num
     if file_size > MAX_FILE_SIZE:
         print("Invalid file size")
         return ConnectionStatus.Connected
-    window_size = 3
-    window = Window(window_size, file_size)
+    
+    window = Window(options.window_size, file_size)
     file = open(options.src, "rb")
     read = file.read(PAYLOAD_SIZE)
     
