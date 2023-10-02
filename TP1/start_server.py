@@ -1,7 +1,6 @@
 import socket
 import threading
 import sys
-import copy
 from lib.transfer_file import receive_file, send_file, ConnectionManager
 from lib.errors import Error
 from lib.message import Type, Message

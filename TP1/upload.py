@@ -1,7 +1,5 @@
 import socket
-import os
 import sys
-from enum import Enum
 from lib.transfer_file import *
 from lib.command_options import Options
 from lib.connection_edges import ConnectionStatus, try_connect

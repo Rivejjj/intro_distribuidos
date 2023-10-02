@@ -4,7 +4,6 @@ import heapq
 import threading
 import random
 import math
-from queue import Queue
 from lib.message import *
 from lib.command_options import Options
 from lib.channel import Channel
