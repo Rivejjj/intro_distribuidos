@@ -5,8 +5,8 @@ import random
 import time
 from enum import Enum
 from lib.errors import Error
-MAX_ATTEMPS = 5
-TIMEOUT = 3
+MAX_ATTEMPS_CONNECTION = 4
+TIMEOUT = 5
 
 class ConnectionStatus(Enum):
     Disconnected = 0
@@ -64,7 +64,7 @@ def server_three_way_handshake(message_receiver: Channel, sock: socket, addr):
 def receive_until_types(message_receiver: Channel, types: list):
     sent = time.time()
     attemps = 0
-    while time.time() - sent < TIMEOUT and attemps < MAX_ATTEMPS:
+    while time.time() - sent < TIMEOUT and attemps < MAX_ATTEMPS_CONNECTION:
         msg = message_receiver.get(TIMEOUT - (time.time() - sent))
         attemps += 1
         if Error.is_error(msg) or msg.header.type not in types:
@@ -108,7 +108,7 @@ def attempt_start_end_of_connection(message_receiver: Channel, sock: socket, add
     return attempt_function(proccess_end_of_connection, (message_receiver, sock, addr))
 
 def attempt_function(function, args):
-    for _ in range(MAX_ATTEMPS):
+    for _ in range(MAX_ATTEMPS_CONNECTION):
         if function(*args):
             return True
     return False

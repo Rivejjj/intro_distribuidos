@@ -11,14 +11,11 @@ from lib.channel import Channel
 from lib.connection_edges import ConnectionStatus
 from lib.errors import Error
 
-TIMEOUT = 1 # A definir
-PACKAGE_TIMEOUT = 2 # A definir
+TIMEOUT = 3 
+MAX_TIMEOUTS = 5 
 RECEIVE_TIMEOUT = 10
-VALID_PACKAGE_TIMEOUT = 10
-MAX_ATTEMPTS = 10
-MAX_DUP = 2
-MAX_ACK_RESENDS = 5
-MAX_TIMEOUTS = 4 #ojo con estos numeros
+MIN_DUP = 2
+MAX_ACK_RESENDS = 4
 
 class ConnectionManager:
     def __init__(self, conection_function, args):
@@ -119,11 +116,14 @@ class Window:
         self.duped_acks = 0
         self.ack_resends = 0
 
+    def curr_max_dup(self):
+        return max(MIN_DUP, len(self.messages) // 2)
+
     def handle_ack(self, ack: Message, sock, addr):
         print("handle_ack")
         if ack.header.seq_num == self.last_ack:
             self.duped_acks +=1
-            if self.duped_acks > MAX_DUP:
+            if self.duped_acks > self.curr_max_dup():
                 if self.ack_resends >= MAX_ACK_RESENDS:
                     return Error.TooManyDupAck
                 self.resend(self.last_ack, sock, addr)

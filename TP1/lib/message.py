@@ -8,15 +8,16 @@ from lib.errors import Error
 
 #numeros son provisorios
 FILE_NAME_SIZE_BYTES = 64
-FILE_SIZE_BYTES = 3                        #Bytes del campo FILE_SIZE del header
+FILE_SIZE_BYTES = 4                        #Bytes del campo FILE_SIZE del header
 PAYLOAD_SIZE_BYTES = 2    #2**16 payload paquete                  #Bytes del campo PAYLOAD_SIZE del header
 SEQ_NUM_BYTES = 2
 HASH_BYTES = 4
 
 
-MAX_FILE_SIZE = 2**(8*FILE_SIZE_BYTES)
+MAX_FILE_SIZE = 2**(8*FILE_SIZE_BYTES -1)
 
-FILE_NAME_SIZE_END = FILE_NAME_SIZE_BYTES + 1
+TYPE_BYTES = 1
+FILE_NAME_SIZE_END = FILE_NAME_SIZE_BYTES + TYPE_BYTES
 FILE_SIZE_END = FILE_NAME_SIZE_END + FILE_SIZE_BYTES #byte del header en el que termina file size
 PAYLOAD_SIZE_END = FILE_SIZE_END + PAYLOAD_SIZE_BYTES #byte del header en el que termina payload size
 SEQ_SIZE_END = PAYLOAD_SIZE_END + SEQ_NUM_BYTES

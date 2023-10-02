@@ -3,7 +3,7 @@ from lib.errors import Error
 from lib.message import Type
 
 DEFAULT_HOST = "127.0.0.1"
-DEFAULT_PORT = 42069
+DEFAULT_PORT = 41970
 MAX_IPV4 = 2**8 -1
 IPV4_SECTIONS = 4
 MAX_IPV6 = 2**16 -1
@@ -11,7 +11,7 @@ IPV6_SECTIONS = 8
 MIN_PORT = 2**10 
 MAX_PORT = 2**16 -1
 DEFAULT_WINDOW_SIZE = 1
-DEFAULT_STORAGE_PATH = "./server_files/"
+DEFAULT_SERVER_STORAGE_PATH = "./server_files/"
 
 class Options:
     def __init__(self, verbosity, addr, src, name=None, window_size=None):
@@ -115,7 +115,7 @@ class Options:
                 elif arg == "-w" or arg == "--window":
                     window_size = validate_window_size(args[i + 1])
         if storage == None:
-            storage = create_dir(DEFAULT_STORAGE_PATH)
+            storage = create_dir(DEFAULT_SERVER_STORAGE_PATH)
             
         return Options(verbosity, (host, port), storage, window_size=window_size)
 
