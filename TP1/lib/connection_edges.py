@@ -4,6 +4,7 @@ import socket
 import random
 import time
 from enum import Enum
+from lib.command_options import MAX_PORT,MIN_PORT
 from lib.errors import Error
 MAX_ATTEMPS_CONNECTION = 4
 TIMEOUT = 5
@@ -112,3 +113,20 @@ def attempt_function(function, args):
         if function(*args):
             return True
     return False
+
+def try_ports(start, end, addr):
+    for port in range(start,end):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            sock.bind((addr, port))
+            return sock
+        except:
+            continue
+    return Error.CouldntFindAvailablePort
+
+def try_connect(addr):
+    random_position = random.randint(MIN_PORT, MAX_PORT)
+    sock = try_ports(random_position, MAX_PORT, addr)
+    if Error.is_error(sock) :
+        sock = try_ports(MIN_PORT,random_position, addr)
+    return sock

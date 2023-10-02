@@ -2,8 +2,8 @@ import socket
 import os
 from enum import Enum
 from lib.transfer_file import *
-from lib.command_options import *
-from lib.connection_edges import ConnectionStatus
+from lib.command_options import Options
+from lib.connection_edges import ConnectionStatus,try_connect
 from lib.channel import Channel
 
 REQUEST_TIMEOUT = 3 
@@ -55,8 +55,10 @@ def main():
         print(f"{command}")
         return
     
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(("127.0.0.2", 42069))
+    sock = try_connect("127.0.0.2")
+    if Error.is_error(sock):
+        print(f"{sock}")
+        return
     sock.settimeout(TIMEOUT)
 
     finished = Channel()

@@ -19,6 +19,7 @@ class Error(Enum):
     CannotWriteFile = 16
     ErrorSharingData = 17
     FileDoesNotExist = 18
+    CouldntFindAvailablePort = 19
 
 
     def __str__(self):

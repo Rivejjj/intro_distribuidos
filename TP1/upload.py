@@ -3,8 +3,8 @@ import os
 import sys
 from enum import Enum
 from lib.transfer_file import *
-from lib.command_options import Options
-from lib.connection_edges import ConnectionStatus
+from lib.command_options import *
+from lib.connection_edges import ConnectionStatus,try_connect
 from lib.channel import Channel
 from lib.message import Message, Error
 
@@ -32,8 +32,11 @@ def main():
     command = Options.upload_from_args(args)
     if (Error.is_error(command)) or (command == None):
         return
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(("127.0.0.2", 42069))
+    
+    sock = try_connect("127.0.0.2")
+    if Error.is_error(sock):
+        print(f"{sock}")
+        return
     sock.settimeout(TIMEOUT)
 
     finished = Channel()
