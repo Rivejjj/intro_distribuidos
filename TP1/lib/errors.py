@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class Error(Enum):
     ErrorStoringData = 1
     RcvTimeout = 2
@@ -21,12 +22,9 @@ class Error(Enum):
     FileDoesNotExist = 18
     CouldntFindAvailablePort = 19
 
-
     def __str__(self):
         return f"Error: {self.name}"
 
     @classmethod
     def is_error(self, value):
         return isinstance(value, Error)
-            
-

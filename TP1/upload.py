@@ -4,15 +4,19 @@ import sys
 from enum import Enum
 from lib.transfer_file import *
 from lib.command_options import Options
-from lib.connection_edges import ConnectionStatus,try_connect
+from lib.connection_edges import ConnectionStatus, try_connect
 from lib.channel import Channel
 from lib.message import Message, Error
 
 TIMEOUT = 3
 
-def upload(message_receiver: Channel, options: Options, sock: socket ,finished: Channel):
 
-    status = ConnectionStatus.attempt_connection_with_server(message_receiver, sock, options.addr)
+def upload(
+    message_receiver: Channel, options: Options, sock: socket, finished: Channel
+):
+    status = ConnectionStatus.attempt_connection_with_server(
+        message_receiver, sock, options.addr
+    )
     if status != ConnectionStatus.Connected:
         print(f"Failed to stablish connection with server addres: {options.addr}")
         finished.put(None)
@@ -24,8 +28,9 @@ def upload(message_receiver: Channel, options: Options, sock: socket ,finished: 
         file.close()
     print(f"Finish with status: {status}")
     status.finish_connection(message_receiver, sock, options.addr)
-    
+
     finished.put(None)
+
 
 def main():
     args = sys.argv[1:]
@@ -48,7 +53,8 @@ def main():
         msg, addr = Message.recv_from(sock)
         if not Error.is_error(msg):
             connection.send_message(msg)
-    
+
     connection.join()
+
 
 main()

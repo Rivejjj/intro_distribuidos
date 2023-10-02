@@ -1,6 +1,6 @@
-
 import unittest
 import upload
+
 
 class ParsingTests(unittest.TestCase):
     def test_identifies_ipv4(self):
@@ -13,5 +13,6 @@ class ParsingTests(unittest.TestCase):
         self.assertFalse(upload.is_ip("hola como andas"))
         self.assertFalse(upload.is_ip("127.0.0.10000"))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
