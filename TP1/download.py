@@ -6,15 +6,8 @@ from lib.command_options import *
 from lib.connection_edges import ConnectionStatus
 from lib.channel import Channel
 
-
-UDP_IP = "127.0.0.1"
-UDP_PORT = 42069
-FILE_NAME = "archivo_test.txt"
-UP = 0
-DOWN = 1   
-
-REQUEST_TIMEOUT = 1 
-REQUEST_ATTEMPTS = 10
+REQUEST_TIMEOUT = 3 
+REQUEST_ATTEMPTS = 5
 
 def request_download(options: Options, sock: socket):
     download_request = Message.make(Type.Receive, options.name, 0, 0, 0,b"")

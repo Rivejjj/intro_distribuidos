@@ -8,11 +8,6 @@ from lib.connection_edges import ConnectionStatus
 from lib.channel import Channel
 from lib.message import Message, Error
 
-UDP_IP = "127.0.0.1"
-UDP_PORT = 42069
-FILE_NAME = "archivo_test.txt"
-UP = 0
-DOWN = 1   
 TIMEOUT = 3
 
 def upload(message_receiver: Channel, options: Options, sock: socket ,finished: Channel):

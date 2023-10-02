@@ -1,3 +1,5 @@
-./server_files/
-./client_files/
-./archivos_test/
+#Ignora los target
+/server_files
+/client_files
+/archivos_test
+/archivos

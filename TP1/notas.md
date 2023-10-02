@@ -29,8 +29,6 @@ Default stop and wait
 ## TESTS
 
 ### Necesario
-1- Varios clientes operando con el mismo archivo
-1- revistar todas las constantes (timeout, header, etc)
 
 2- falta testear todo(no necesariamente tests de codigo, Test perdida de handshake, tests options, que pasa si subis directorios)
 
@@ -57,6 +55,7 @@ agregar el window al send
 1- nombre de archivos repetidos en sv, que se hace? -reemplazar
 1- interrupcion de descarga/subida                  -descarta_lo_guardado
 1- graceful_finish_server                           -en algun momento del ciclo del while chequear la terminal (esperar a los demas threads)
+1- Varios clientes operando con el mismo archivo
 ## PRIORIDAD
 
 

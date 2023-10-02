@@ -11,11 +11,7 @@ from lib.connection_edges import ConnectionStatus
 from lib.command_options import Options
 from lib.file_controller import FileController
 
-UDP_IP = "127.0.0.1"
-UDP_PORT = 42069
-UP = 0
-DOWN = 1
-TIMEOUT = 10
+TIMEOUT = 1
 
 def handle_client(message_receiver: Channel, client_addr, server_options: Options, sock: socket, controller: FileController,finished_channel: Channel):
     print(client_addr)
@@ -68,8 +64,6 @@ def server_init():
     return server_options, sock, clients, finished_clients, controller
 
 def server(end_of_program: Channel):
-     # [1:] para omitir el nombre del script
-    # server_options = Options(True, (UDP_IP,UDP_PORT), './server_files/', None)
     
     server_options, sock, clients, finished_clients, controller = server_init()
     print("Server is running")
