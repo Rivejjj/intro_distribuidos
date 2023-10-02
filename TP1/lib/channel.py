@@ -1,24 +1,37 @@
 from multiprocessing import Queue
+import threading
 from lib.errors import Error
-
+    
 class Channel():
     def __init__(self):
-        self.queue = Queue()
-
-    def __str__(self):
-        return str(self.queue)
+        self.list = []
+        self.condition = threading.Condition()
 
     def get(self, timeout=None):
-        try:
-            return self.queue.get(True, timeout)
-        except:
-            return Error.EmptyChannel
+        with self.condition:
+            if len(self.list) == 0:
+                if not self.condition.wait(timeout):
+                    return Error.RcvTimeout
+            return self.list.pop(0)
         
-    def put(self, message, timeout=None):
-        try:
-            self.queue.put(message, True, timeout)
-        except:
-            return Error.FullChannel
-    
+    def put(self, element, timeout=None):
+        with self.condition:
+            try:
+                if len(self.list) == 0:
+                    self.condition.notify()
+                self.list.append(element)
+            except:
+                return Error.FullChannel
+            
+    def peek(self, timeout=None):
+        with self.condition:
+            if len(self.list) == 0:
+                if not self.condition.wait(timeout):
+                    return Error.RcvTimeout
+            return self.list[0]
+            
     def empty(self):
-        return self.queue.empty()
+        with self.condition:
+            if len(self.list) == 0:
+                return True
+            return False

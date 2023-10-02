@@ -20,9 +20,8 @@ def handle_client(message_receiver: Channel, client_addr, server_options: Option
         print(f"Failed to connect to Client: {client_addr}")
         finished_channel.put(client_addr)
         return
-    aux = copy.deepcopy(message_receiver)
 
-    first_msg = aux.get(TIMEOUT)
+    first_msg = message_receiver.peek(TIMEOUT)
     if Error.is_error(first_msg):
         finished_channel.put(client_addr)
         return
