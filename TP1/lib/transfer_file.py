@@ -10,7 +10,7 @@ from lib.command_options import Options
 from lib.channel import Channel
 from lib.connection_edges import ConnectionStatus
 from lib.errors import Error
-from lib.print import print_verbose
+from lib.print import print_verbose, print_progress_bar
 
 TIMEOUT = 3 
 MAX_TIMEOUTS = 5 
@@ -98,6 +98,7 @@ class Window:
         
         self.timeouts.append(entry.restart_timeout())
 
+
     def acknowledge(self, seq_num):
         last_msg_sent = self.messages[len(self.messages)-1]
         if seq_num > last_msg_sent.header.seq_num + 1:
@@ -115,6 +116,7 @@ class Window:
         self.ack_resends = 0
 
     def curr_max_dup(self):
+        print(f"max dup {max(MIN_DUP, len(self.messages) // 2)}")
         return max(MIN_DUP, len(self.messages) // 2)
 
     def handle_ack(self, ack: Message, sock, addr):
@@ -126,6 +128,7 @@ class Window:
                 self.resend(self.last_ack, sock, addr)
                 print_verbose(f"Resending package {self.last_ack} to {addr} due to too many acks\n")
                 self.ack_resends += 1
+                self.duped_acks = 0
         if ack.header.seq_num > self.last_ack:
             return self.acknowledge(ack.header.seq_num)
 
@@ -210,7 +213,7 @@ def receive_file(message_receiver: Channel, options: Options, sock: socket, expe
             break
         if increased_bytes:
             last_usefull_package_time = time.time()
-        #p barrita
+        print_progress_bar(bytes_received[0], expected_file_size, options.name)
 
     if (not bytes_received[0] == expected_file_size) or (expected_file_size == 0):  
         remove_file(options.src)
