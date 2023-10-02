@@ -24,7 +24,7 @@ def download(message_receiver: Channel, options: Options, sock: socket ,finished
 
     attempts = 0
     request_download(options, sock)
-    msg = message_receiver.get(REQUEST_TIMEOUT)
+    msg = message_receiver.peek(REQUEST_TIMEOUT)
     while (attempts < REQUEST_ATTEMPTS) and (Error.is_error(msg)):
         request_download(options, sock)
         msg = message_receiver.get(REQUEST_TIMEOUT)
@@ -32,7 +32,6 @@ def download(message_receiver: Channel, options: Options, sock: socket ,finished
     
     if not Error.is_error(msg):
         options.src = "./" + options.src + "/" + options.name     #p falta chequear que exista la carpeta
-        message_receiver.put(msg)
 
         file = try_open_file(options.src, "wb")
         if Error.is_error(file):
