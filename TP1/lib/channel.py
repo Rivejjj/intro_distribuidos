@@ -14,7 +14,7 @@ class Channel():
                     return Error.RcvTimeout
             return self.list.pop(0)
         
-    def put(self, element, timeout=None):
+    def put(self, element):
         with self.condition:
             try:
                 if len(self.list) == 0:
