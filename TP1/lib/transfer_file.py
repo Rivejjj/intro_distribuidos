@@ -10,6 +10,7 @@ from lib.command_options import Options
 from lib.channel import Channel
 from lib.connection_edges import ConnectionStatus
 from lib.errors import Error
+from lib.print import print_verbose
 
 TIMEOUT = 3 
 MAX_TIMEOUTS = 5 
@@ -22,11 +23,9 @@ class ConnectionManager:
         self.channel = Channel()
         self.join_handle = threading.Thread(target=conection_function, args=(self.channel,) + args)
         self.join_handle.start()
-        print("--------------SE SPAWNEA THREAD-----------")
     
     def try_join(self):
         if not self.join_handle.is_alive():
-            print("joinea el thread")
             self.join_handle.join()
             return True
         return False
@@ -75,6 +74,7 @@ class Window:
     def send(self, message: Message, sock: socket, addr):
         if len(self.messages) >= self.max_size:
             return Error.WindowFull
+        print_verbose(f"Sending file, package {message.header.seq_num} to {addr}")
         message.send_to(sock, addr)
         self.timeouts.append(TimeoutEntry(message.header.seq_num))
         self.messages.append(message)
@@ -89,7 +89,6 @@ class Window:
 
     def resend(self, seq_number, sock, addr):
         position = seq_number - self.last_ack
-        #print(f"resend: \n {self}")
         self.messages[position].send_to(sock, addr)
         
         for i in range(len(self.timeouts)):
@@ -100,7 +99,6 @@ class Window:
         self.timeouts.append(entry.restart_timeout())
 
     def acknowledge(self, seq_num):
-        print(f"aknowledge\n {self}")
         last_msg_sent = self.messages[len(self.messages)-1]
         if seq_num > last_msg_sent.header.seq_num + 1:
             return Error.InvalidSeqNum
@@ -120,14 +118,13 @@ class Window:
         return max(MIN_DUP, len(self.messages) // 2)
 
     def handle_ack(self, ack: Message, sock, addr):
-        print("handle_ack")
         if ack.header.seq_num == self.last_ack:
             self.duped_acks +=1
             if self.duped_acks > self.curr_max_dup():
                 if self.ack_resends >= MAX_ACK_RESENDS:
                     return Error.TooManyDupAck
                 self.resend(self.last_ack, sock, addr)
-                
+                print_verbose(f"Resending package {self.last_ack} to {addr} due to too many acks\n")
                 self.ack_resends += 1
         if ack.header.seq_num > self.last_ack:
             return self.acknowledge(ack.header.seq_num)
@@ -142,8 +139,8 @@ class Window:
             if entry.amount_of_timeouts > MAX_TIMEOUTS:
                 return Error.RcvTimeout
             self.resend(entry.seq_num, sock, addr)
+            print_verbose(f"Resending package {entry.seq_num} to {addr}due to timeout\n")
             next_time_out = self.time_until_next_timeout()
-        print(f"final timeout {self}")
 
     def finished(self):
         if self.last_ack == self.amount_of_packages:
@@ -152,7 +149,6 @@ class Window:
     
 #selective 
 def send_file(message_receiver: Channel, options: Options, sock: socket, seq_num,file)->ConnectionStatus:
-    print("entre a send")
     file_size = os.path.getsize(options.src)
     if file_size > MAX_FILE_SIZE:
         print("Invalid file size")
@@ -164,7 +160,7 @@ def send_file(message_receiver: Channel, options: Options, sock: socket, seq_num
     while not window.finished():
         timeout = window.time_until_next_timeout()
         if (read != b''):
-            message = Message.make(Type.Send, options.name, file_size, len(read), seq_num, read)
+            message = Message.make(Type.Send, options.name, file_size, len(read), seq_num, read)            
             sent = window.send(message, sock, options.addr)
             if not Error.is_error(sent):
                 seq_num += 1
@@ -173,6 +169,7 @@ def send_file(message_receiver: Channel, options: Options, sock: socket, seq_num
 
         msg = message_receiver.get(timeout)
         if not Error.is_error(msg):
+            print_verbose(f"Received msg of type {msg.header.type} with seq_num {msg.header.seq_num} from {options.addr}\n")
             if msg.header.type == Type.Fin:
                 return ConnectionStatus.FinRequested
             if msg.header.type == Type.Ack:
@@ -181,10 +178,10 @@ def send_file(message_receiver: Channel, options: Options, sock: socket, seq_num
                     return ConnectionStatus.Connected
         if Error.is_error(window.handle_timeout(sock, options.addr)):
             return ConnectionStatus.ConnectionLost
+        #p actualizar_barrita
     return ConnectionStatus.Connected
             
 def receive_file(message_receiver: Channel, options: Options, sock: socket, expected_file_size, file)->ConnectionStatus:
-    print("Im ready to receive")
     status = ConnectionStatus.Connected
     
     next_message = [0]
@@ -197,14 +194,14 @@ def receive_file(message_receiver: Channel, options: Options, sock: socket, expe
         if Error.is_error(msg):
             status = ConnectionStatus.ConnectionLost
             break
+        print_verbose(f"Received msg of type {msg.header.type} with seq_num {msg.header.seq_num} from {options.addr}")
         if msg.header.type == Type.Fin:
-            print("ME LLEGO EL PRIMER FIN LOCO")
             status = ConnectionStatus.FinRequested
             break
         if random.random() >= 0.1:
             heapq.heappush(messages, msg)
         else:
-            print(f"\n Dropeamos el paquete {msg.header.seq_num}\n")
+            print(f"\n 🗑️  Dropeamos el paquete: {msg.header.seq_num}\n") #p sacarlo
             continue
 
         increased_bytes = handle_send_type_messages(messages, file, next_message, bytes_received, expected_file_size, options, sock)
@@ -213,6 +210,7 @@ def receive_file(message_receiver: Channel, options: Options, sock: socket, expe
             break
         if increased_bytes:
             last_usefull_package_time = time.time()
+        #p barrita
 
     if (not bytes_received[0] == expected_file_size) or (expected_file_size == 0):  
         remove_file(options.src)
@@ -234,8 +232,8 @@ def handle_send_type_messages(messages: list, file, next_message, bytes_received
             next_message[0] +=1
             if msg.header.payload_size != 0:
                 increased_bytes = True
-    Message.send_ack(next_message[0],sock, options.addr)
-    print(f"mande ack a {options.addr}")
+    Message.send_ack(next_message[0], sock, options.addr)
+    print_verbose(f"Sent ack {next_message[0]} to {options.addr}\n")
     return increased_bytes
 
 def try_open_file(path, flag):
@@ -245,7 +243,7 @@ def try_open_file(path, flag):
         return Error.OpeningFile
 
 def store_package(file, path, data: bytearray):
-    print(f"Storing file in {path}")
+    print_verbose(f"Storing package in {path}")
     try:
         file.write(data)
     except :

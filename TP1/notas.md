@@ -31,14 +31,15 @@ Default stop and wait
 ### Necesario
 
 2- falta testear todo(no necesariamente tests de codigo, Test perdida de handshake, tests options, que pasa si subis directorios)
+2- Mejorar prints
+2- Handeleo del send_to
 
 3- comcast
-3- wireshark 
-
-4- que te agarre una direccion disponible
+3- wireshark
 
 5- correr linter: https://flake8.pycqa.org/en/latest/
 
+6- Sacar drops
 
 ### Lujo
 Servidor ofrece lo que esta subido
@@ -56,6 +57,7 @@ agregar el window al send
 1- interrupcion de descarga/subida                  -descarta_lo_guardado
 1- graceful_finish_server                           -en algun momento del ciclo del while chequear la terminal (esperar a los demas threads)
 1- Varios clientes operando con el mismo archivo
+4- que te agarre una direccion disponible
 ## PRIORIDAD
 
 

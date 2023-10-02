@@ -125,13 +125,11 @@ class Message:
         return (header_hash + payload_hash) % (2**32)
     
     def send_to(self, sock: socket, addr):
-        #sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         bytes_to_send = self.header.to_bytes() + self.payload
-        print(f"\n longitud {len(bytes_to_send)}")
         sock.sendto(bytes_to_send, addr)                                #p handelear la excepcion
 
     @classmethod
-    #crea un mensaje ya hasheado
+    #p crea un mensaje ya hasheado
     def make(self ,type: Type, file_name: str, file_size: int, payload_size: int, seq_num: int, payload: bytearray):
         header = MessageHeader(type, file_name, file_size, payload_size, seq_num)
         msg = Message(header, payload)
@@ -142,7 +140,6 @@ class Message:
     #p capas podria estar bueno pasar el nombre, capaz que no
     def send_ack(self, seq_num, sock: socket, addr):
         ack_msg = Message.make(Type.Ack, "", 0, 0, seq_num, b"")
-        print(ack_msg)
         ack_msg.send_to(sock, addr)
         
     @classmethod
@@ -152,11 +149,9 @@ class Message:
             header
         if header.payload_size > PAYLOAD_SIZE:
             print("Received invalid message size")
-            #ver que hacer porque te pueden haber mandado lo bytes de mas en otro paquete de udp
             return Error.InvalidMessageSize
         if header.file_size > MAX_FILE_SIZE:
             print("Received invalid file size")
-            #ver que hacer porque te pueden haber mandado lo bytes de mas en otro paquete de udp
             return Error.InvalidFileSize
     
         msg = Message(header, data[HEADER_SIZE:])

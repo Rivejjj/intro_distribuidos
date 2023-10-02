@@ -6,6 +6,7 @@ import time
 from enum import Enum
 from lib.command_options import MAX_PORT,MIN_PORT
 from lib.errors import Error
+from lib.print import print_verbose
 MAX_ATTEMPS_CONNECTION = 4
 TIMEOUT = 5
 
@@ -40,29 +41,30 @@ class ConnectionStatus(Enum):
 
 def send_connection_msg(connection_step: Type, sock: socket, addr):
     msg = Message.make(connection_step,"",0,0,0,b"")
-    print(f"Mando {connection_step}")
+    print_verbose(f"Sending {connection_step} to {addr}")
     msg.send_to(sock, addr)
 
-def receive_connection_msg(message_receiver: Channel, connection_step: Type):
+def receive_connection_msg(message_receiver: Channel, connection_step: Type, addr):
     msg = message_receiver.get(TIMEOUT)
     if Error.is_error(msg):
         return False
+    print_verbose(f"Received {msg.header.type} from {addr}")
     return msg.header.type == connection_step
 
 def client_three_way_handshake(message_receiver: Channel, sock: socket, addr):
     send_connection_msg(Type.Sync1, sock, addr)
-    if not receive_connection_msg(message_receiver ,Type.Sync2):
+    if not receive_connection_msg(message_receiver ,Type.Sync2, addr):
         return False
     send_connection_msg(Type.Sync3, sock, addr)           #p  En caso de que se agrege el handler de send modificarlo
     return True
 
 def server_three_way_handshake(message_receiver: Channel, sock: socket, addr):
-    if not receive_connection_msg(message_receiver, Type.Sync1):
+    if not receive_connection_msg(message_receiver, Type.Sync1, addr):
         return False
     send_connection_msg(Type.Sync2, sock, addr)
-    return receive_connection_msg(message_receiver, Type.Sync3)
+    return receive_connection_msg(message_receiver, Type.Sync3, addr)
 
-def receive_until_types(message_receiver: Channel, types: list):
+def receive_until_types(message_receiver: Channel, types: list,addr):
     sent = time.time()
     attemps = 0
     while time.time() - sent < TIMEOUT and attemps < MAX_ATTEMPS_CONNECTION:
@@ -70,33 +72,30 @@ def receive_until_types(message_receiver: Channel, types: list):
         attemps += 1
         if Error.is_error(msg) or msg.header.type not in types:
             continue
-        print(f"Recibi {msg.header.type}")
+        print_verbose(f"Received {msg.header.type} from {addr}")
         return msg.header.type
     
     return Error.RcvTimeout
 
-#asumis que ya recibiste el fin1
 def proccess_end_of_connection(message_receiver: Channel, sock: socket, addr):
-    print("EMPECE A PROCESAR")
     send_connection_msg(Type.FinAck, sock, addr)
     send_connection_msg(Type.Fin, sock, addr)
-    received = receive_until_types(message_receiver ,[Type.FinAck])
+    received = receive_until_types(message_receiver ,[Type.FinAck], addr)
     if Error.is_error(received):
         return False
     return received
 
 def start_end_of_connection(message_receiver: Channel, sock: socket, addr):
-    print("ENVIO PRIMER FIN")
     send_connection_msg(Type.Fin, sock, addr)
     types = [Type.Fin, Type.FinAck]
-    received = receive_until_types(message_receiver ,types)
+    received = receive_until_types(message_receiver, types, addr)
     if Error.is_error(received):
         return False
     if received == Type.Fin:
         send_connection_msg(Type.FinAck, sock, addr)
         
     types.remove(received)
-    received = receive_until_types(message_receiver ,types)
+    received = receive_until_types(message_receiver, types, addr)
     if Error.is_error(received):
         return False
     send_connection_msg(Type.FinAck, sock, addr)

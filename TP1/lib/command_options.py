@@ -13,9 +13,10 @@ MAX_PORT = 2**16 -1
 DEFAULT_WINDOW_SIZE = 1
 DEFAULT_SERVER_STORAGE_PATH = "./server_files/"
 
+verbose = [False]
+
 class Options:
-    def __init__(self, verbosity, addr, src, name=None, window_size=None):
-        self.verbosity = verbosity
+    def __init__(self, addr, src, name=None, window_size=None):
         self.addr = addr
         self.src = src
         self.name = name
@@ -27,18 +28,19 @@ class Options:
             print_upload_help()
             return None
         
-        verbosity = False
         host = DEFAULT_HOST
         port = DEFAULT_PORT 
         src = None
         filename = None
         window_size = DEFAULT_WINDOW_SIZE
+        global verbose
         
         for i, arg in enumerate(args):
             if arg == "-q" or arg == "--quiet":
-                verbosity = False
+                verbose[0] = False
             elif arg == "-v" or arg == "--verbose":
-                verbosity = True
+                print("Encontre un -v") #eliminar
+                verbose[0] = True
             elif i + 1 < len(args):
                 if arg == "-H" or arg == "--host":
                     host = validate_host(args[i + 1])
@@ -51,11 +53,12 @@ class Options:
                 elif arg == "-w" or arg == "--window":
                     window_size = validate_window_size(args[i + 1])
         if src == None:
+            print("Invalid source argument")
             return Error.InvalidArgs
         if filename == None:
             filename = os.path.basename(src)
 
-        return Options(verbosity, (host, port), src, filename, window_size)
+        return Options((host, port), src, filename, window_size)
 
     @classmethod
     def download_from_args(self, args):
@@ -63,17 +66,18 @@ class Options:
             print_download_help()
             return None
         
-        verbosity = False
         host = DEFAULT_HOST
         port = DEFAULT_PORT 
         dest = None
         filename = None
+        global verbose
         
         for i, arg in enumerate(args):
             if arg == "-q" or arg == "--quiet":
-                verbosity = False
+                verbose[0] = False
             elif arg == "-v" or arg == "--verbose":
-                verbosity = True
+                print("Encontre una -v") #Eliminar
+                verbose[0] = True
             elif i + 1 < len(args):
                 if arg == "-H" or arg == "--host":
                     host = validate_host(args[i + 1])
@@ -83,10 +87,14 @@ class Options:
                     dest = validate_directory_path(args[i + 1])
                 elif arg == "-n" or arg == "--name":
                     filename = validate_filename(args[i + 1])
-        if dest == None or filename == None:
+        if dest == None:
+            print("Invalid destination argument")
+            return Error.InvalidArgs
+        if filename == None:
+            print("Invalid filename argument")
             return Error.InvalidArgs
             
-        return Options(verbosity, (host, port), dest, filename)
+        return Options((host, port), dest, filename)
 
     @classmethod
     def server_from_args(self, args):
@@ -94,17 +102,17 @@ class Options:
             print_server_help()
             return None
         
-        verbosity = False
         host = DEFAULT_HOST
         port = DEFAULT_PORT
         storage = None
         window_size = DEFAULT_WINDOW_SIZE
+        global verbose
         
         for i, arg in enumerate(args):
             if arg == "-q" or arg == "--quiet":
-                verbosity = False
+                verbose[0] = False
             elif arg == "-v" or arg == "--verbose":
-                verbosity = True
+                verbose[0] = True
             elif i + 1 < len(args):
                 if arg == "-H" or arg == "--host":
                     host = validate_host(args[i + 1])
@@ -115,13 +123,14 @@ class Options:
                 elif arg == "-w" or arg == "--window":
                     window_size = validate_window_size(args[i + 1])
         if storage == None:
+            print("Storage not found, the directory will be created by default.")
             storage = create_dir(DEFAULT_SERVER_STORAGE_PATH)
             
-        return Options(verbosity, (host, port), storage, window_size=window_size)
+        return Options((host, port), storage, window_size=window_size)
 
 
     def __str__(self):
-        return f"UploadOptions(verbosity={self.verbosity}, host={self.addr[0]}, port={self.addr[1]}, src={self.src}, name={self.name}, window_size={self.window_size})"
+        return f"UploadOptions(host={self.addr[0]}, port={self.addr[1]}, src={self.src}, name={self.name}, window_size={self.window_size})"
 
 def print_generic_help():
     print("<command description>")
@@ -186,7 +195,9 @@ def is_ip(str):
     return is_ipv4(str) or is_ipv6(str)
 
 def is_not_command(arg):
-    return arg not in { "-h","-v","-q","-H","-p","-s" ,"-n"}
+    if len(arg) == 0:
+        return False
+    return arg[0] != '-'
     
 def validate_host(arg):
     if is_ip(arg):
@@ -235,6 +246,6 @@ def create_dir(path):
         try:
             os.mkdir(path)
         except OSError: 
-            print("fue el OS")
+            print("Could not create the directory")
             return Error.CreatingStorage
     return path
