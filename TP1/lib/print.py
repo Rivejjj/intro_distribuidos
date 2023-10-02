@@ -1,5 +1,4 @@
 from lib.command_options import verbose
-import os
 
 MAX_PROGRESS_BAR_LEN = 50
 

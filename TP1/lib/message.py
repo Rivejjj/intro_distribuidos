@@ -1,7 +1,5 @@
 import socket
 from enum import Enum
-import sys
-import time
 import unittest
 import hashlib
 from lib.errors import Error
@@ -10,7 +8,8 @@ from lib.errors import Error
 FILE_NAME_SIZE_BYTES = 64
 FILE_SIZE_BYTES = 4  # Bytes del campo FILE_SIZE del header
 PAYLOAD_SIZE_BYTES = (
-    2  # 2**16 payload paquete                  #Bytes del campo PAYLOAD_SIZE del header
+    2  # 2**16 payload paquete
+    # Bytes del campo PAYLOAD_SIZE del header
 )
 SEQ_NUM_BYTES = 2
 HASH_BYTES = 4
@@ -55,7 +54,8 @@ class Type(Enum):
 
 
 # formato:
-#     2 bits 0: type (UPLOAD=0, DOWNLOAD=1, ack= 2, solicitud de files disponibles = 3)
+#     2 bits
+#     0: type (UPLOAD=0, DOWNLOAD=1, ack= 2, solicitud de files disponibles = 3)
 #     32 u 64 bytes para el nombre del archivo
 #     x bytes para 2gs: longitud del archivo (por ahora no es necesaria) //cantidad de paquetes (dividido el tam max)
 #     2 bytes longitud [0-65535] del payload variable con tope superior

@@ -120,10 +120,6 @@ def start_end_of_connection(message_receiver: Channel, sock: socket, addr):
     return True
 
 
-def attempt_proccess_end_of_connection(message_receiver: Channel, sock: socket, addr):
-    return
-
-
 def attempt_start_end_of_connection(message_receiver: Channel, sock: socket, addr):
     return attempt_function(proccess_end_of_connection, (message_receiver, sock, addr))
 

@@ -7,9 +7,7 @@ class ParsingTests(unittest.TestCase):
         self.assertTrue(upload.is_ip("127.0.0.1"))
 
     def test_identifies_ipv6(self):
-        self.assertTrue(
-            upload.is_ip("1050:0000:0000:0000:0005:0600:300c:326b")
-            )
+        self.assertTrue(upload.is_ip("1050:0000:0000:0000:0005:0600:300c:326b"))
 
     def test_identifies_nonip_addresses(self):
         self.assertFalse(upload.is_ip("hola como andas"))

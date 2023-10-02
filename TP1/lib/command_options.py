@@ -1,6 +1,5 @@
 import os
 from lib.errors import Error
-from lib.message import Type
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 41970
@@ -53,10 +52,10 @@ class Options:
                     filename = validate_filename(args[i + 1])
                 elif arg == "-w" or arg == "--window":
                     window_size = validate_window_size(args[i + 1])
-        if src == None:
+        if src is None:
             print("Invalid source argument")
             return Error.InvalidArgs
-        if filename == None:
+        if filename is None:
             filename = os.path.basename(src)
 
         return Options((host, port), src, filename, window_size)
@@ -88,10 +87,10 @@ class Options:
                     dest = validate_directory_path(args[i + 1])
                 elif arg == "-n" or arg == "--name":
                     filename = validate_filename(args[i + 1])
-        if dest == None:
+        if dest is None:
             print("Invalid destination argument")
             return Error.InvalidArgs
-        if filename == None:
+        if filename is None:
             print("Invalid filename argument")
             return Error.InvalidArgs
 
@@ -123,14 +122,21 @@ class Options:
                     storage = validate_directory_path(args[i + 1])
                 elif arg == "-w" or arg == "--window":
                     window_size = validate_window_size(args[i + 1])
-        if storage == None:
+        if storage is None:
             print("Storage not found, the directory will be created by default.")
             storage = create_dir(DEFAULT_SERVER_STORAGE_PATH)
 
         return Options((host, port), storage, window_size=window_size)
 
     def __str__(self):
-        return f"UploadOptions(host={self.addr[0]}, port={self.addr[1]}, src={self.src}, name={self.name}, window_size={self.window_size})"
+        return (
+            f"UploadOptions("
+            f"host={self.addr[0]}, "
+            f"port={self.addr[1]}, "
+            f"src={self.src}, "
+            f"name={self.name}, "
+            f"window_size={self.window_size})"
+        )
 
 
 def print_generic_help():
@@ -145,7 +151,8 @@ def print_generic_help():
 
 def print_upload_help():
     print(
-        "usage : upload [ - h ] [ - v | -q ] [ - H ADDR ] [ - p PORT ] [ - s FILEPATH ] [ - n FILENAME ] [-w NUMBER]"
+        f"usage : upload [ - h ] [ - v | -q ] [ - H ADDR ] "
+        f"[ - p PORT ] [ - s FILEPATH ] [ - n FILENAME ] [-w NUMBER]"
     )
     print_generic_help()
     print("-n, --name FILENAME   File name")
@@ -155,7 +162,8 @@ def print_upload_help():
 
 def print_download_help():
     print(
-        "usage : download [ - h ] [ - v | -q ] [ - H ADDR ] [ - p PORT ] [ - d FILEPATH ] [ - n FILENAME ]"
+        f"usage : download [ - h ] [ - v | -q ] [ - H ADDR ] "
+        f"[ - p PORT ] [ - d FILEPATH ] [ - n FILENAME ]"
     )
     print_generic_help()
     print("-n, --name FILENAME   File name")
@@ -164,7 +172,8 @@ def print_download_help():
 
 def print_server_help():
     print(
-        "usage : start - server [ - h ] [ - v | -q ] [ - H ADDR ] [ - p PORT ] [ - s DIRPATH ] [-w NUMBER]"
+        f"usage : start - server [ - h ] [ - v | -q ] [ - H ADDR ]"
+        f"[ - p PORT ] [ - s DIRPATH ] [-w NUMBER]"
     )
     print_generic_help()
     print("-s , --storage storage dir path")
@@ -248,6 +257,8 @@ def validate_file_path(path):
 
 def validate_directory_path(path):
     if os.path.exists(path) and os.path.isdir(path):
+        if len(path) > 0 and path[-1] != '/':
+            return path + "/"
         return path
     return None
 

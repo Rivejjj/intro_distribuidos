@@ -59,7 +59,7 @@ def main():
     args = sys.argv[1:]
 
     command = Options.download_from_args(args)
-    if Error.is_error(command) or command == None:
+    if Error.is_error(command) or (command is None):
         return
     print_verbose(f"Starting configuration {command}")
     sock = try_connect("127.0.0.2")

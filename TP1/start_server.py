@@ -74,7 +74,7 @@ def handle_client(
 def server_init():
     args = sys.argv[1:]
     server_options = Options.server_from_args(args)
-    if Error.is_error(server_options) or server_options == None:
+    if Error.is_error(server_options) or (server_options is None):
         return
     print_verbose(f"Starting configuration {server_options}")
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -102,7 +102,7 @@ def server(end_of_program: Channel):
                 )
 
         if not Error.is_error(msg):
-            if clients.get(addr) == None and end_of_program.empty():
+            if (clients.get(addr) is None) and end_of_program.empty():
                 clients[addr] = ConnectionManager(
                     handle_client,
                     (addr, server_options, sock, controller, finished_clients),
