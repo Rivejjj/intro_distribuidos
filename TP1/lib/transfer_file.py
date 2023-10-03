@@ -11,8 +11,11 @@ from lib.channel import Channel
 from lib.connection_edges import ConnectionStatus
 from lib.errors import Error
 from lib.print import print_verbose, print_progress_bar
+import bisect
 
-TIMEOUT = 3
+
+TIMEOUT = 7
+FIRST_MESSAGE_TIMEOUT = 3
 MAX_TIMEOUTS = 5
 RECEIVE_TIMEOUT = 15
 MAX_DUP = 2
@@ -41,18 +44,22 @@ class ConnectionManager:
 
 
 class TimeoutEntry:
-    def __init__(self, seq_num):
+    def __init__(self, seq_num, timeout=TIMEOUT):
         self.seq_num = seq_num
-        self.timeout = time.time() + TIMEOUT
+        self.restart_value = timeout
+        self.timeout = time.time() + timeout
         self.amount_of_timeouts = 0
 
     def restart_timeout(self):
-        self.timeout = time.time() + TIMEOUT
+        self.timeout = time.time() + self.restart_value
         self.amount_of_timeouts += 1
         return self
 
     def __lt__(self, other):
-        return self.timeout < other.timeout
+        return self.timeout < other.timeout\
+        
+    def __str__(self):
+        return f"TimeoutEntry[{self.seq_num}, {self.timeout}]"
 
 
 class Window:
@@ -105,7 +112,7 @@ class Window:
                 entry = self.timeouts.pop(i)
                 break
 
-        self.timeouts.append(entry.restart_timeout())
+        bisect.insort(self.timeouts, entry.restart_timeout())
 
     def acknowledge(self, seq_num):
         last_msg_sent = self.messages[len(self.messages) - 1]
@@ -116,8 +123,14 @@ class Window:
         self.messages = self.messages[starting:]
         aux = []
         for entry in self.timeouts:
-            if entry.seq_num >= seq_num:
+            if entry.seq_num > seq_num:
                 aux.append(entry)
+            if entry.seq_num == seq_num:
+                new_timeout = entry.timeout - time.time()
+                if new_timeout < 0 or new_timeout > 2:
+                    new_timeout = FIRST_MESSAGE_TIMEOUT
+                aux.insert(0, TimeoutEntry(seq_num, new_timeout))
+
         self.timeouts = aux
         self.last_ack = seq_num
         self.duped_acks = 0
@@ -150,7 +163,7 @@ class Window:
         next_time_out = self.time_until_next_timeout()
         while next_time_out <= 0:
             entry = self.timeouts[0]
-            if entry.amount_of_timeouts > MAX_TIMEOUTS:
+            if entry.amount_of_timeouts >= MAX_TIMEOUTS:
                 return Error.RcvTimeout
             self.resend(entry.seq_num, sock, addr)
             print_verbose(
