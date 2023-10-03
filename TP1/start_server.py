@@ -102,12 +102,17 @@ def server(end_of_program: Channel, server_options: Options):
                 )
 
         if not Error.is_error(msg):
+            send_message = True
             if (clients.get(addr) is None) and end_of_program.empty():
-                clients[addr] = ConnectionManager(
-                    handle_client,
-                    (addr, server_options, sock, controller, finished_clients),
-                )
-            clients[addr].send_message(msg)
+                if msg.header.type == Type.Sync1:
+                    clients[addr] = ConnectionManager(
+                        handle_client,
+                        (addr, server_options, sock, controller, finished_clients),
+                    )
+                else:
+                    send_message=False   
+            if send_message:
+                clients[addr].send_message(msg)
         if not end_of_program.empty() and len(clients) == 0:
             running = False
 

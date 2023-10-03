@@ -123,7 +123,6 @@ class Window:
         self.ack_resends = 0
 
     def curr_max_dup(self):
-        print(f"max dup {max(MIN_DUP, len(self.messages) // 2)}")
         return max(MIN_DUP, len(self.messages) // 2)
 
     def handle_ack(self, ack: Message, sock, addr):
@@ -170,6 +169,7 @@ def send_file(
         return ConnectionStatus.Connected
 
     window = Window(options.window_size, file_size)
+    bytes_sent = 0
     read = file.read(PAYLOAD_SIZE)
 
     while not window.finished():
@@ -181,6 +181,7 @@ def send_file(
             sent = window.send(message, sock, options.addr)
             if not Error.is_error(sent):
                 seq_num += 1
+                bytes_sent += message.header.payload_size
                 read = file.read(PAYLOAD_SIZE)
                 timeout = 0
 
@@ -199,7 +200,7 @@ def send_file(
                     return ConnectionStatus.Connected
         if Error.is_error(window.handle_timeout(sock, options.addr)):
             return ConnectionStatus.ConnectionLost
-        # p actualizar_barrita
+        print_progress_bar(bytes_sent, file_size, options.name)
     return ConnectionStatus.Connected
 
 
@@ -232,11 +233,7 @@ def receive_file(
         if msg.header.type == Type.Fin:
             status = ConnectionStatus.FinRequested
             break
-        if random.random() >= 0.1:
-            heapq.heappush(messages, msg)
-        else:
-            print(f"\n 🗑️ Dropeamos paquete: {msg.header.seq_num}\n")
-            continue
+        heapq.heappush(messages, msg)
 
         increased_bytes = handle_send_type_messages(
             messages,
