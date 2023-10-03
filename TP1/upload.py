@@ -1,5 +1,6 @@
 import socket
 import sys
+import time
 from lib.transfer_file import print_verbose, ConnectionManager
 from lib.transfer_file import send_file, try_open_file
 from lib.command_options import Options
@@ -13,6 +14,7 @@ TIMEOUT = 3
 def upload(
     msg_receiver: Channel, options: Options, sock: socket, finished: Channel
 ):
+    initial_time = time.time()
     status = ConnectionStatus.attempt_connection_with_server(
         msg_receiver, sock, options.addr
     )
@@ -29,7 +31,7 @@ def upload(
     status.finish_connection(msg_receiver, sock, options.addr)
 
     finished.put(None)
-
+    print_verbose(f"Executed in {time.time()-initial_time}")
 
 def main():
     args = sys.argv[1:]

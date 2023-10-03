@@ -15,8 +15,9 @@ from lib.print import print_verbose, print_progress_bar
 TIMEOUT = 3
 MAX_TIMEOUTS = 5
 RECEIVE_TIMEOUT = 15
-MIN_DUP = 2
+MAX_DUP = 2
 MAX_ACK_RESENDS = 4
+ACK_RESENDS_TIME_DELTA = 0.01
 
 class ConnectionManager:
     def __init__(self, conection_function, args):
@@ -63,6 +64,7 @@ class Window:
         self.last_ack = 0
         self.duped_acks = 0
         self.ack_resends = 0
+        self.next_ack_resend_time = time.time()
 
     def __str__(self):
         string = "buffer: ["
@@ -120,23 +122,24 @@ class Window:
         self.last_ack = seq_num
         self.duped_acks = 0
         self.ack_resends = 0
-
-    def curr_max_dup(self):
-        return max(MIN_DUP, (len(self.messages) // 4) -1) 
+        self.next_ack_resend_time = time.time()
 
     def handle_ack(self, ack: Message, sock, addr):
         if ack.header.seq_num == self.last_ack:
             self.duped_acks += 1
-            if self.duped_acks > self.curr_max_dup():
+            #if self.duped_acks > self.curr_max_dup():
+            if self.duped_acks >= MAX_DUP:
                 if self.ack_resends >= MAX_ACK_RESENDS:
                     return Error.TooManyDupAck
-                self.resend(self.last_ack, sock, addr)
-                print_verbose(
-                f"Resending package {self.last_ack}"
-                f"to {addr} due to ack dup\n"
-                )
+                if time.time() > self.next_ack_resend_time:
+                    self.resend(self.last_ack, sock, addr)
+                    print_verbose(
+                    f"Resending package {self.last_ack} "
+                    f"to {addr} due to ack dup\n"
+                    )
+                    self.next_ack_resend_time = time.time() + ACK_RESENDS_TIME_DELTA
+                    self.ack_resends += 1
 
-                self.ack_resends += 1
                 self.duped_acks = 0
         if ack.header.seq_num > self.last_ack:
             return self.acknowledge(ack.header.seq_num)
@@ -151,7 +154,7 @@ class Window:
                 return Error.RcvTimeout
             self.resend(entry.seq_num, sock, addr)
             print_verbose(
-                f"Resending package {entry.seq_num}"
+                f"Resending package {entry.seq_num} "
                 f"to {addr} due to timeout\n"
             )
             next_time_out = self.time_until_next_timeout()
@@ -185,14 +188,19 @@ def send_file(
     while not window.finished():
         timeout = window.time_until_next_timeout()
         
-        while not Error.is_error(window.send(message, sock, options.addr)) and read != b"":
+        while message != None:
+            if Error.is_error(window.send(message, sock, options.addr)):
+                break
             seq_num += 1
             bytes_sent += message.header.payload_size
             read = file.read(PAYLOAD_SIZE)
             timeout = 0
-            message = Message.make(
-            Type.Send, options.name, file_size, len(read), seq_num, read
-            )
+            if read != b"":
+                message = Message.make(
+                    Type.Send, options.name, file_size, len(read), seq_num, read
+                )
+            else: 
+                message = None
 
         msg = message_receiver.get(timeout)
         if not Error.is_error(msg):
