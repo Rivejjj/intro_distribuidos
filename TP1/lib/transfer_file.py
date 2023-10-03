@@ -14,10 +14,9 @@ from lib.print import print_verbose, print_progress_bar
 
 TIMEOUT = 3
 MAX_TIMEOUTS = 5
-RECEIVE_TIMEOUT = 10
+RECEIVE_TIMEOUT = 15
 MIN_DUP = 2
 MAX_ACK_RESENDS = 4
-
 
 class ConnectionManager:
     def __init__(self, conection_function, args):
@@ -98,7 +97,7 @@ class Window:
     def resend(self, seq_number, sock, addr):
         position = seq_number - self.last_ack
         self.messages[position].send_to(sock, addr)
-
+        
         for i in range(len(self.timeouts)):
             if self.timeouts[i].seq_num == seq_number:
                 entry = self.timeouts.pop(i)
@@ -123,7 +122,7 @@ class Window:
         self.ack_resends = 0
 
     def curr_max_dup(self):
-        return max(MIN_DUP, len(self.messages) // 2)
+        return max(MIN_DUP, (len(self.messages) // 4) -1) 
 
     def handle_ack(self, ack: Message, sock, addr):
         if ack.header.seq_num == self.last_ack:
@@ -132,6 +131,10 @@ class Window:
                 if self.ack_resends >= MAX_ACK_RESENDS:
                     return Error.TooManyDupAck
                 self.resend(self.last_ack, sock, addr)
+                print_verbose(
+                f"Resending package {self.last_ack}"
+                f"to {addr} due to ack dup\n"
+                )
 
                 self.ack_resends += 1
                 self.duped_acks = 0
@@ -157,6 +160,9 @@ class Window:
         if self.last_ack == self.amount_of_packages:
             return True
         return False
+    
+    def free_slots(self):
+        return self.max_size-len(self.messages)
 
 
 # selective
@@ -172,18 +178,21 @@ def send_file(
     bytes_sent = 0
     read = file.read(PAYLOAD_SIZE)
 
-    while not window.finished():
-        timeout = window.time_until_next_timeout()
-        if read != b"":
-            message = Message.make(
+    message = Message.make(
                 Type.Send, options.name, file_size, len(read), seq_num, read
             )
-            sent = window.send(message, sock, options.addr)
-            if not Error.is_error(sent):
-                seq_num += 1
-                bytes_sent += message.header.payload_size
-                read = file.read(PAYLOAD_SIZE)
-                timeout = 0
+
+    while not window.finished():
+        timeout = window.time_until_next_timeout()
+        
+        while not Error.is_error(window.send(message, sock, options.addr)) and read != b"":
+            seq_num += 1
+            bytes_sent += message.header.payload_size
+            read = file.read(PAYLOAD_SIZE)
+            timeout = 0
+            message = Message.make(
+            Type.Send, options.name, file_size, len(read), seq_num, read
+            )
 
         msg = message_receiver.get(timeout)
         if not Error.is_error(msg):
