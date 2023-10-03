@@ -23,9 +23,10 @@ class ConnectionStatus(Enum):
 
     @classmethod
     def attempt_connection_with_server(
-        self, message_receiver: Channel, sock: socket, addr
+        self, msg_receiver: Channel, sock: socket, addr
     ):
-        if attempt_function(client_three_way_handshake, (message_receiver, sock, addr)):
+        func = client_three_way_handshake
+        if attempt_function(func, (msg_receiver, sock, addr)):
             return ConnectionStatus.Connected
         return ConnectionStatus.Disconnected
 
@@ -55,8 +56,8 @@ def send_connection_msg(connection_step: Type, sock: socket, addr):
     msg.send_to(sock, addr)
 
 
-def receive_connection_msg(message_receiver: Channel, connection_step: Type, addr):
-    msg = message_receiver.get(TIMEOUT)
+def receive_connection_msg(msg_receiver: Channel, connection_step: Type, addr):
+    msg = msg_receiver.get(TIMEOUT)
     if Error.is_error(msg):
         return False
     print_verbose(f"Received {msg.header.type} from {addr}")
@@ -120,8 +121,9 @@ def start_end_of_connection(message_receiver: Channel, sock: socket, addr):
     return True
 
 
-def attempt_start_end_of_connection(message_receiver: Channel, sock: socket, addr):
-    return attempt_function(proccess_end_of_connection, (message_receiver, sock, addr))
+def attempt_start_end_of_connection(msg_receiver: Channel, sock: socket, addr):
+    func = proccess_end_of_connection
+    return attempt_function(func, (msg_receiver, sock, addr))
 
 
 def attempt_function(function, args):
@@ -137,7 +139,7 @@ def try_ports(start, end, addr):
         try:
             sock.bind((addr, port))
             return sock
-        except:
+        except Exception:
             continue
     return Error.CouldntFindAvailablePort
 

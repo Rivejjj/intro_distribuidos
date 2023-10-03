@@ -14,82 +14,81 @@ TIMEOUT = 1
 
 
 def handle_client(
-    message_receiver: Channel,
+    msg_receiver: Channel,
     client_addr,
     server_options: Options,
     sock: socket,
     controller: FileController,
     finished_channel: Channel,
 ):
-    print_verbose(f"--------------- New client: {client_addr} ---------------")
+    print_verbose(f"-------------- New client: {client_addr} --------------")
     status = ConnectionStatus.attempt_connection_with_client(
-        message_receiver, sock, client_addr
+        msg_receiver, sock, client_addr
     )
     if status != ConnectionStatus.Connected:
         print(f"Failed to connect to Client: {client_addr}")
         finished_channel.put(client_addr)
         return
 
-    first_msg = message_receiver.peek(TIMEOUT)
+    first_msg = msg_receiver.peek(TIMEOUT)
     if Error.is_error(first_msg):
         finished_channel.put(client_addr)
         return
 
-    # message_receiver.put(first_msg)
-    file_handling_options = Options(
+    # msg_receiver.put(first_msg)
+    file_handling_opt = Options(
         client_addr,
         server_options.src + first_msg.header.file_name,
         first_msg.header.file_name,
         server_options.window_size,
     )  # to-do
     if first_msg.header.type == Type.Send:
-        file = controller.try_write_lock(file_handling_options.src)
+        file = controller.try_write_lock(file_handling_opt.src)
         if not Error.is_error(file):
             print(
-                f"Receiving file: {file_handling_options.name} from: {file_handling_options.addr}"
+                f"Receiving file: {file_handling_opt.name} "
+                f"from: {file_handling_opt.addr}"
             )
             status = receive_file(
-                message_receiver,
-                file_handling_options,
+                msg_receiver,
+                file_handling_opt,
                 sock,
                 first_msg.header.file_size,
                 file,
             )
             controller.release_write_lock(file)
-
     elif first_msg.header.type == Type.Receive:
-        file = controller.try_read_lock(file_handling_options.src)
+        file = controller.try_read_lock(file_handling_opt.src)
         if not Error.is_error(file):
             print(
-                f"Sending file: {file_handling_options.name} to: {file_handling_options.addr}"
+                f"Sending file: {file_handling_opt.name} "
+                f"to: {file_handling_opt.addr}"
             )
-            status = send_file(message_receiver, file_handling_options, sock, 0, file)
+            status = send_file(msg_receiver, file_handling_opt, sock, 0, file)
             controller.release_read_lock(file)
 
-    status.finish_connection(message_receiver, sock, client_addr)
+    status.finish_connection(msg_receiver, sock, client_addr)
     print(f"Finish with status: {status}")
     finished_channel.put(client_addr)
 
 
-def server_init():
-    args = sys.argv[1:]
-    server_options = Options.server_from_args(args)
-    if Error.is_error(server_options) or (server_options is None):
-        return
-    print_verbose(f"Starting configuration {server_options}")
+def server_init(addr):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(server_options.addr)
+    sock.bind(addr)
     sock.settimeout(TIMEOUT)
 
     clients = {}
     finished_clients = Channel()
     controller = FileController()
 
-    return server_options, sock, clients, finished_clients, controller
+    return sock, clients, finished_clients, controller
 
 
-def server(end_of_program: Channel):
-    server_options, sock, clients, finished_clients, controller = server_init()
+def server(end_of_program: Channel, server_options: Options):
+    print_verbose(f"Starting configuration {server_options}")
+    initialize = server_init(server_options.addr)
+
+    sock, clients, finished_clients, controller = initialize
     print("Server is running")
     running = True
     while running:
@@ -98,7 +97,8 @@ def server(end_of_program: Channel):
             finished_addr = finished_clients.get()
             if clients.pop(finished_addr).try_join():
                 print_verbose(
-                    f"Joined thread handling communications with {finished_addr}"
+                    f"Joined thread handling"
+                    f"communications with {finished_addr}"
                 )
 
         if not Error.is_error(msg):
@@ -116,8 +116,13 @@ def server(end_of_program: Channel):
 
 
 def main():
+    args = sys.argv[1:]
+    sv_options = Options.server_from_args(args)
+    if sv_options is None:
+        return
+
     finish = Channel()
-    join_handle = threading.Thread(target=server, args=(finish,))
+    join_handle = threading.Thread(target=server, args=(finish, sv_options,))
     join_handle.start()
     end_of_program = False
     while not end_of_program:

@@ -40,7 +40,7 @@ class FileController:
             return Error.FileDoesNotExist
         try:
             self.lock.acquire()
-        except:
+        except TimeoutError:
             return Error.ErrorSharingData
 
         name = os.path.basename(path)
@@ -53,7 +53,7 @@ class FileController:
     def try_write_lock(self, path):
         try:
             self.lock.acquire()
-        except:
+        except TimeoutError:
             return Error.ErrorSharingData
         name = os.path.basename(path)
         self.dict[name] = self.dict.get(name, FileOpening(path))
@@ -65,7 +65,7 @@ class FileController:
     def release_read_lock(self, file):
         try:
             self.lock.acquire()
-        except:
+        except TimeoutError:
             return Error.ErrorSharingData
         self.dict[os.path.basename(file.name)].release_read_lock(file)
         self.lock.release()
@@ -73,7 +73,7 @@ class FileController:
     def release_write_lock(self, file):
         try:
             self.lock.acquire()
-        except:
+        except TimeoutError:
             return Error.ErrorSharingData
         self.dict.pop(os.path.basename(file.name)).release_write_lock(file)
         self.lock.release()

@@ -4,7 +4,8 @@ import heapq
 import threading
 import random
 import math
-from lib.message import *
+import socket
+from lib.message import Message, Type, MAX_FILE_SIZE, PAYLOAD_SIZE
 from lib.command_options import Options
 from lib.channel import Channel
 from lib.connection_edges import ConnectionStatus
@@ -71,14 +72,17 @@ class Window:
         string += "]\n Messages: ["
         for message in self.messages:
             string += f"{message.header.seq_num}, "
-        string += f"]\n Last_ack: {self.last_ack}\n Ack resends: {self.ack_resends} \n"
+        string += f"]\n Last_ack: {self.last_ack}\n "
+        string += f"Ack resends: {self.ack_resends} \n"
 
         return string
 
     def send(self, message: Message, sock: socket, addr):
         if len(self.messages) >= self.max_size:
             return Error.WindowFull
-        print_verbose(f"Sending file, package {message.header.seq_num} to {addr}")
+        print_verbose(
+                    f"Sending file, package"
+                    f"{message.header.seq_num} to {addr}")
         message.send_to(sock, addr)
         self.timeouts.append(TimeoutEntry(message.header.seq_num))
         self.messages.append(message)
@@ -129,9 +133,7 @@ class Window:
                 if self.ack_resends >= MAX_ACK_RESENDS:
                     return Error.TooManyDupAck
                 self.resend(self.last_ack, sock, addr)
-                print_verbose(
-                    f"Resending package {self.last_ack} to {addr} due to too many acks\n"
-                )
+
                 self.ack_resends += 1
                 self.duped_acks = 0
         if ack.header.seq_num > self.last_ack:
@@ -147,7 +149,8 @@ class Window:
                 return Error.RcvTimeout
             self.resend(entry.seq_num, sock, addr)
             print_verbose(
-                f"Resending package {entry.seq_num} to {addr}due to timeout\n"
+                f"Resending package {entry.seq_num}"
+                f"to {addr} due to timeout\n"
             )
             next_time_out = self.time_until_next_timeout()
 
@@ -184,7 +187,9 @@ def send_file(
         msg = message_receiver.get(timeout)
         if not Error.is_error(msg):
             print_verbose(
-                f"Received msg of type {msg.header.type} with seq_num {msg.header.seq_num} from {options.addr}\n"
+                f"Received msg of type {msg.header.type} "
+                f"with seq_num {msg.header.seq_num} "
+                f"from {options.addr}\n"
             )
             if msg.header.type == Type.Fin:
                 return ConnectionStatus.FinRequested
@@ -199,7 +204,11 @@ def send_file(
 
 
 def receive_file(
-    message_receiver: Channel, options: Options, sock: socket, expected_file_size, file
+    message_receiver: Channel,
+    options: Options,
+    sock: socket,
+    expected_file_size,
+    file
 ) -> ConnectionStatus:
     status = ConnectionStatus.Connected
 
@@ -216,7 +225,9 @@ def receive_file(
             status = ConnectionStatus.ConnectionLost
             break
         print_verbose(
-            f"Received msg of type {msg.header.type} with seq_num {msg.header.seq_num} from {options.addr}"
+            f"Received msg of type {msg.header.type} "
+            f"with seq_num {msg.header.seq_num} "
+            f"from {options.addr}"
         )
         if msg.header.type == Type.Fin:
             status = ConnectionStatus.FinRequested
@@ -224,7 +235,7 @@ def receive_file(
         if random.random() >= 0.1:
             heapq.heappush(messages, msg)
         else:
-            print(f"\n 🗑️  Dropeamos el paquete: {msg.header.seq_num}\n")  # p sacarlo
+            print(f"\n 🗑️ Dropeamos paquete: {msg.header.seq_num}\n")
             continue
 
         increased_bytes = handle_send_type_messages(
@@ -243,7 +254,7 @@ def receive_file(
             last_usefull_package_time = time.time()
         print_progress_bar(bytes_received[0], expected_file_size, options.name)
 
-    if (not bytes_received[0] == expected_file_size) or (expected_file_size == 0):
+    if (bytes_received[0] != expected_file_size) or (not expected_file_size):
         remove_file(options.src)
         print("Failed to download File")
 
@@ -253,36 +264,36 @@ def receive_file(
 def handle_send_type_messages(
     messages: list,
     file,
-    next_message,
+    next_msg,
     bytes_received,
     expected_file_size,
     options: Options,
     sock: socket,
 ):
     increased_bytes = False
-    while (len(messages) != 0) and (messages[0].header.seq_num <= next_message[0]):
+    while (len(messages) != 0) and (messages[0].header.seq_num <= next_msg[0]):
         msg = heapq.heappop(messages)
         if msg.header.type != Type.Send:
             continue
-        if (msg.header.seq_num == next_message[0]) and (
+        if (msg.header.seq_num == next_msg[0]) and (
             bytes_received[0] + msg.header.payload_size <= expected_file_size
         ):
             stored = store_package(file, options.src, msg.payload)
             if Error.is_error(stored):
                 return stored
             bytes_received[0] += stored
-            next_message[0] += 1
+            next_msg[0] += 1
             if msg.header.payload_size != 0:
                 increased_bytes = True
-    Message.send_ack(next_message[0], sock, options.addr)
-    print_verbose(f"Sent ack {next_message[0]} to {options.addr}\n")
+    Message.send_ack(next_msg[0], sock, options.addr)
+    print_verbose(f"Sent ack {next_msg[0]} to {options.addr}\n")
     return increased_bytes
 
 
 def try_open_file(path, flag):
     try:
         return open(path, flag)
-    except OSError:
+    except Exception:
         return Error.OpeningFile
 
 
@@ -290,7 +301,7 @@ def store_package(file, path, data: bytearray):
     print_verbose(f"Storing package in {path}")
     try:
         file.write(data)
-    except:
+    except Exception:
         return Error.ErrorStoringData
     return len(data)
 
@@ -298,5 +309,5 @@ def store_package(file, path, data: bytearray):
 def remove_file(path):
     try:
         os.remove(path)
-    except:
+    except Exception:
         print("Failed to remove corrupted file")

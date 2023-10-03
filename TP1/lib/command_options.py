@@ -123,7 +123,7 @@ class Options:
                 elif arg == "-w" or arg == "--window":
                     window_size = validate_window_size(args[i + 1])
         if storage is None:
-            print("Storage not found, the directory will be created by default.")
+            print("Storage not found, directory will be created by default.")
             storage = create_dir(DEFAULT_SERVER_STORAGE_PATH)
 
         return Options((host, port), storage, window_size=window_size)
@@ -151,8 +151,8 @@ def print_generic_help():
 
 def print_upload_help():
     print(
-        f"usage : upload [ - h ] [ - v | -q ] [ - H ADDR ] "
-        f"[ - p PORT ] [ - s FILEPATH ] [ - n FILENAME ] [-w NUMBER]"
+        "usage : upload [ - h ] [ - v | -q ] [ - H ADDR ] "
+        "[ - p PORT ] [ - s FILEPATH ] [ - n FILENAME ] [-w NUMBER]"
     )
     print_generic_help()
     print("-n, --name FILENAME   File name")
@@ -162,8 +162,8 @@ def print_upload_help():
 
 def print_download_help():
     print(
-        f"usage : download [ - h ] [ - v | -q ] [ - H ADDR ] "
-        f"[ - p PORT ] [ - d FILEPATH ] [ - n FILENAME ]"
+        "usage : download [ - h ] [ - v | -q ] [ - H ADDR ] "
+        "[ - p PORT ] [ - d FILEPATH ] [ - n FILENAME ]"
     )
     print_generic_help()
     print("-n, --name FILENAME   File name")
@@ -172,12 +172,12 @@ def print_download_help():
 
 def print_server_help():
     print(
-        f"usage : start - server [ - h ] [ - v | -q ] [ - H ADDR ]"
-        f"[ - p PORT ] [ - s DIRPATH ] [-w NUMBER]"
+        "usage : start - server [ - h ] [ - v | -q ] [ - H ADDR ]"
+        "[ - p PORT ] [ - s DIRPATH ] [-w NUMBER]"
     )
     print_generic_help()
     print("-s , --storage storage dir path")
-    print("-w, --window WINDOW SIZE    Window size")
+    print("-w, --window WINDOW SIZE    Window size\n")
 
 
 def is_invalid_ip_segment(str, max_ip):
@@ -266,10 +266,12 @@ def validate_directory_path(path):
 def validate_window_size(size):
     try:
         size = int(size)
-        if size > 0:
-            return size
     except ValueError:
         print("Invalid window size, using default window size.")
+
+    if size > 0:
+        return size
+    print("Invalid window size, using default window size.")
     return DEFAULT_WINDOW_SIZE
 
 
@@ -277,7 +279,7 @@ def create_dir(path):
     if not os.path.exists(path):
         try:
             os.mkdir(path)
-        except OSError:
+        except Exception:
             print("Could not create the directory")
             return Error.CreatingStorage
     return path

@@ -1,4 +1,3 @@
-from multiprocessing import Queue
 import threading
 from lib.errors import Error
 
@@ -21,7 +20,7 @@ class Channel:
                 if len(self.list) == 0:
                     self.condition.notify()
                 self.list.append(element)
-            except:
+            except Exception:
                 return Error.FullChannel
 
     def peek(self, timeout=None):

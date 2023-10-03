@@ -1,5 +1,8 @@
 import socket
-from lib.transfer_file import *
+import sys
+from lib.transfer_file import Message, Error, ConnectionManager, receive_file
+from lib.transfer_file import TIMEOUT, Type, try_open_file, remove_file
+from lib.print import print_verbose
 from lib.command_options import Options
 from lib.connection_edges import ConnectionStatus, try_connect
 from lib.channel import Channel
@@ -10,18 +13,18 @@ REQUEST_ATTEMPTS = 5
 
 def request_download(options: Options, sock: socket):
     download_request = Message.make(Type.Receive, options.name, 0, 0, 0, b"")
-    print_verbose(f"Requesting file")
+    print_verbose("Requesting file")
     download_request.send_to(sock, options.addr)
 
 
 def download(
-    message_receiver: Channel, options: Options, sock: socket, finished: Channel
+    msg_receiver: Channel, options: Options, sock: socket, finished: Channel
 ):
     status = ConnectionStatus.attempt_connection_with_server(
-        message_receiver, sock, options.addr
+        msg_receiver, sock, options.addr
     )
     if status != ConnectionStatus.Connected:
-        print(f"Failed to stablish connection with server address: {options.addr}")
+        print(f"Failed to stablish connection with server at: {options.addr}")
         finished.put(None)
         return
 
@@ -29,10 +32,10 @@ def download(
 
     attempts = 0
     request_download(options, sock)
-    msg = message_receiver.peek(REQUEST_TIMEOUT)
+    msg = msg_receiver.peek(REQUEST_TIMEOUT)
     while (attempts < REQUEST_ATTEMPTS) and (Error.is_error(msg)):
         request_download(options, sock)
-        msg = message_receiver.get(REQUEST_TIMEOUT)
+        msg = msg_receiver.get(REQUEST_TIMEOUT)
         attempts += 1
 
     if not Error.is_error(msg):
@@ -45,12 +48,12 @@ def download(
             remove_file(options.src)
 
         status = receive_file(
-            message_receiver, options, sock, msg.header.file_size, file
+            msg_receiver, options, sock, msg.header.file_size, file
         )
         file.close()
 
         print(f"Finish with status: {status}")
-        status.finish_connection(message_receiver, sock, options.addr)
+        status.finish_connection(msg_receiver, sock, options.addr)
 
     finished.put(None)
 

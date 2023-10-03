@@ -14,7 +14,7 @@ def print_progress_bar(proccesed_bytes, total_bytes, file_name):
     progress = round(proccesed_bytes / total_bytes, 2)
     progress_bar_len = int((progress * MAX_PROGRESS_BAR_LEN))
     progress_bar = f"{file_name} |" + "#" * progress_bar_len
-    progress_bar += " " * (MAX_PROGRESS_BAR_LEN - progress_bar_len) + f"| {progress}"
-
+    progress_bar += " " * (MAX_PROGRESS_BAR_LEN - progress_bar_len)
+    progress_bar += f"| {progress}"
     # os.system('clear')
     print(progress_bar)

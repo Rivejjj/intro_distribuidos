@@ -53,20 +53,6 @@ class Type(Enum):
             return Error.UnknownType
 
 
-# formato:
-#     2 bits
-#     0: type (UPLOAD=0, DOWNLOAD=1, ack= 2, solicitud de files disponibles = 3)
-#     32 u 64 bytes para el nombre del archivo
-#     x bytes para 2gs: longitud del archivo (por ahora no es necesaria) //cantidad de paquetes (dividido el tam max)
-#     2 bytes longitud [0-65535] del payload variable con tope superior
-#     sequence number
-#     Hash
-
-# a decidir: se manda un ack y despues el archivo o directamente el archivo?
-
-#     payload bytes n+1 a m: contenido del archivo (solo si type es UPLOAD)
-
-
 class MessageHeader:
     def __init__(
         self,
@@ -121,9 +107,18 @@ class MessageHeader:
         payload_size = int.from_bytes(
             data[FILE_SIZE_END:PAYLOAD_SIZE_END], byteorder="big"
         )
-        seq_num = int.from_bytes(data[PAYLOAD_SIZE_END:SEQ_SIZE_END], byteorder="big")
+        seq_num = int.from_bytes(
+            data[PAYLOAD_SIZE_END:SEQ_SIZE_END], byteorder="big"
+            )
         hash = int.from_bytes(data[SEQ_SIZE_END:HEADER_SIZE], byteorder="big")
-        return MessageHeader(type, file_name, file_size, payload_size, seq_num, hash)
+        return MessageHeader(
+            type,
+            file_name,
+            file_size,
+            payload_size,
+            seq_num,
+            hash
+        )
 
 
 class Message:
@@ -138,7 +133,7 @@ class Message:
         return self.header.seq_num < other.header.seq_num
 
     def __reduce__(self):
-        # Devuelve una tupla que contiene la función para reconstruir la instancia
+        # Devuelve una tupla con la función para reconstruir la instancia.
         # y los argumentos necesarios para esa función.
         return (
             self.__class__,
@@ -149,9 +144,9 @@ class Message:
         )
 
     def calculate_hash(self):
-        header_hash = int.from_bytes(self.header.calculate_hash(), byteorder="big")
-        payload_hash = int.from_bytes(hash_bytes(self.payload), byteorder="big")
-        return (header_hash + payload_hash) % (2**32)
+        header = int.from_bytes(self.header.calculate_hash(), byteorder="big")
+        payload = int.from_bytes(hash_bytes(self.payload), byteorder="big")
+        return (header + payload) % (2**32)
 
     def send_to(self, sock: socket, addr):
         bytes_to_send = self.header.to_bytes() + self.payload
@@ -168,7 +163,13 @@ class Message:
         seq_num: int,
         payload: bytearray,
     ):
-        header = MessageHeader(type, file_name, file_size, payload_size, seq_num)
+        header = MessageHeader(
+            type,
+            file_name,
+            file_size,
+            payload_size,
+            seq_num
+        )
         msg = Message(header, payload)
         msg.header.hash = msg.calculate_hash()
         return msg
@@ -206,10 +207,14 @@ class Message:
         return Message.from_bytes(datagram_payload), addr
 
 
-class TestMessageHeaderMethods(unittest.TestCase):
+class TestMessageHeaderMethod(unittest.TestCase):
     def test_parse_and_serialize(self):
         header1 = MessageHeader(
-            type=1, file_name="test.txt", file_size=2, payload_size=2, seq_num=3
+            type=1,
+            file_name="test.txt",
+            file_size=2,
+            payload_size=2,
+            seq_num=3
         )
         bytes = header1.to_bytes()
         header2 = MessageHeader.from_bytes(bytes)
