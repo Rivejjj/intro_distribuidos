@@ -21,6 +21,7 @@ python3 upload -h
 - `-p`, `--port`: Especifica el puerto del servidor.
 - `-s`, `--src`: Especifica la ruta del archivo fuente que deseas cargar.
 - `-n`, `--name`: Especifica el nombre que se asignará al archivo en el servidor.
+- `-w`, `--window` WINDOW SIZE    Window size
 
 ### Comando `download`
 
@@ -56,6 +57,7 @@ python3 start-server -h
 - `-H`, `--host`: Especifica la dirección IP del servicio.
 - `-p`, `--port`: Especifica el puerto del servicio.
 - `-s`, `--storage`: Especifica la ruta del directorio de almacenamiento en el servidor.
+- `-w`, `--window` WINDOW SIZE    Window size
 
 ## Ejemplos de Uso
 

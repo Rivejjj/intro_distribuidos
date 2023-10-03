@@ -4,13 +4,9 @@ import unittest
 import hashlib
 from lib.errors import Error
 
-# numeros son provisorios
-FILE_NAME_SIZE_BYTES = 64
-FILE_SIZE_BYTES = 4  # Bytes del campo FILE_SIZE del header
-PAYLOAD_SIZE_BYTES = (
-    2  # 2**16 payload paquete
-    # Bytes del campo PAYLOAD_SIZE del header
-)
+FILE_NAME_SIZE_BYTES = 32
+FILE_SIZE_BYTES = 4 
+PAYLOAD_SIZE_BYTES = 2  
 SEQ_NUM_BYTES = 2
 HASH_BYTES = 4
 
@@ -80,10 +76,10 @@ class MessageHeader:
         return representation
 
     def hashless_bytes(self):
-        lenght = len(self.file_name)
+        length = len(self.file_name)
         byte_seq = self.type.to_bytes()
         byte_seq += self.file_name.encode()
-        byte_seq += int(0).to_bytes(FILE_NAME_SIZE_BYTES - lenght, "big")
+        byte_seq += int(0).to_bytes(FILE_NAME_SIZE_BYTES - length, "big")
         byte_seq += self.file_size.to_bytes(FILE_SIZE_BYTES, "big")
         byte_seq += self.payload_size.to_bytes(PAYLOAD_SIZE_BYTES, "big")
         byte_seq += self.seq_num.to_bytes(SEQ_NUM_BYTES, "big")
@@ -127,7 +123,7 @@ class Message:
         self.payload = payload
 
     def __str__(self):
-        return self.header.__str__()  # + "\n payload: \n" + self.payload.hex()
+        return self.header.__str__()
 
     def __lt__(self, other):
         return self.header.seq_num < other.header.seq_num
@@ -150,10 +146,10 @@ class Message:
 
     def send_to(self, sock: socket, addr):
         bytes_to_send = self.header.to_bytes() + self.payload
-        sock.sendto(bytes_to_send, addr)  # p handelear la excepcion
+        sock.sendto(bytes_to_send, addr) 
 
     @classmethod
-    # p crea un mensaje ya hasheado
+    #crea un mensaje ya hasheado
     def make(
         self,
         type: Type,
@@ -175,7 +171,7 @@ class Message:
         return msg
 
     @classmethod
-    # p capas podria estar bueno pasar el nombre, capaz que no
+
     def send_ack(self, seq_num, sock: socket, addr):
         ack_msg = Message.make(Type.Ack, "", 0, 0, seq_num, b"")
         ack_msg.send_to(sock, addr)

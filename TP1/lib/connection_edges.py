@@ -70,7 +70,7 @@ def client_three_way_handshake(message_receiver: Channel, sock: socket, addr):
         return False
     send_connection_msg(
         Type.Sync3, sock, addr
-    )  # p  En caso de que se agrege el handler de send modificarlo
+    ) 
     return True
 
 

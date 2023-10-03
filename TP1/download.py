@@ -41,7 +41,7 @@ def download(
     if not Error.is_error(msg):
         options.src = (
             "./" + options.src + "/" + options.name
-        )  # p falta chequear que exista la carpeta
+        )
 
         file = try_open_file(options.src, "wb")
         if Error.is_error(file):
@@ -77,7 +77,7 @@ def main():
     while finished.empty():
         msg, addr = Message.recv_from(sock)
         if not Error.is_error(msg):
-            connection.send_message(msg)  # todo check direccion
+            connection.send_message(msg)  
 
     finished.get()
     connection.join()
