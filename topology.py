@@ -32,7 +32,7 @@ class CustomTopology(Topo):
         for i in range(num_switches - 1):
             self.addLink(switches[i], switches[i + 1])
         
-        # Conexiones entre switches estáticos e inicio/fin de la cadena dinámica
+        # Conexiones entre hosts estáticos e inicio/fin de la cadena dinámica
         self.addLink(h1, switches[0])
         self.addLink(h2, switches[0])
 
