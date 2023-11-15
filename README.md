@@ -116,7 +116,7 @@ sudo mn --custom topology.py --topo myTopo --arp --mac --switch ovsk --controlle
 Si deseas especificar la cantidad de switches dinámicos, utiliza el siguiente comando, reemplazando `<cant_switchs>` con el número deseado:
 
 ```bash
-sudo mn --custom topology.py --topo myTopo,10 --arp --mac --switch ovsk --controller remote
+sudo mn --custom topology.py --topo myTopo,<cant_switchs> --arp --mac --switch ovsk --controller remote
 ```
 
 Este comando te permitirá personalizar la topología según tus necesidades, ajustando la cantidad de switches dinámicos según lo que requieras para tus pruebas y experimentos.
