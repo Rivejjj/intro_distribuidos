@@ -82,19 +82,21 @@ POX, un framework de controlador OpenFlow en Python, es esencial para implementa
      git clone https://github.com/noxrepo/pox.git
      ```
 
-#### Ejecución de POX:
+#### Ejecución de POX con Firewall Personalizado:
 
-1. **Ejecutar un Módulo Específico:**
-   - Navega al directorio de POX en la terminal.
-   - Ejecuta POX con un módulo específico. Por ejemplo, para el módulo de spanning tree:
+1. **Configuración inicial:**
+   - Mueve el archivo `firewall.py` a la carpeta `pox` del directorio POX.
+   - Accede al directorio POX desde la terminal.
+
+2. **Ejecución con Firewall Personalizado:**
+   - Utiliza el siguiente comando para ejecutar POX con nuestro firewall y el módulo de aprendizaje de nivel 2 (`forwarding.l2_learning`):
 
      ```bash
-     ./pox.py samples.spanning_tree
+     pox/pox.py firewall forwarding.l2_learning
      ```
 
-     Asegúrate de especificar el nombre correcto del módulo que deseas ejecutar.
+   - Asegúrate de que el archivo `firewall.py` está correctamente ubicado en la carpeta `pox`. Este comando iniciará POX con nuestro firewall personalizado y el módulo de aprendizaje de nivel 2 para la red definida.
 
-**Nota:** El comando para ejecutar POX y aplicar spanning tree es temporal y deberá ser cambiado según las indicaciones de la cátedra.
 
 ## Ejecución
 
