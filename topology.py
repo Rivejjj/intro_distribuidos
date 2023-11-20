@@ -1,7 +1,5 @@
 from mininet.topo import Topo
 
-
-
 class CustomTopology(Topo):
     def __init__(self, num_switches=4):
         """
@@ -41,4 +39,5 @@ class CustomTopology(Topo):
         
 
         
+# globa topos
 topos = { 'myTopo': CustomTopology }
