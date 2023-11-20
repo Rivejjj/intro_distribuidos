@@ -127,7 +127,7 @@ Este comando te permitirá personalizar la topología según tus necesidades, aj
 3. Abre otra terminal y ejecuta el controlador POX con la funcionalidad de spanning tree:
 
    ```bash
-   ./pox.py samples.spanning_tree
+   pox/pox.py forwarding.l2_learning firewall --rule=rules.json
    ```
 
 **Nota:** El comando para ejecutar POX y aplicar spanning tree es temporal y deberá ser cambiado según las indicaciones de la cátedra.
