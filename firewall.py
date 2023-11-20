@@ -45,7 +45,7 @@ class Firewall (EventMixin):
         """
         try:
             with open(file_path, 'r') as file:
-                self.rules_data = json.load(file).get("rules")
+                self.rules_data = json.load(file)
                 log.debug(f"Loaded rules from {file_path}: {self.rules_data}")
             return self.rules_data
         except FileNotFoundError:
