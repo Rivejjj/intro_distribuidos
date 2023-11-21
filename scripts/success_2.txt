@@ -1,0 +1,4 @@
+h4 iperf -s -f k &
+h3 iperf -s -f k &
+h1 iperf -i1 -c h4
+h2 iperf -i1 -c h3
