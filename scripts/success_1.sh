@@ -20,6 +20,7 @@ if [ "$#" -eq 1 ]; then
     echo "Ejecutando Mininet con topología personalizada y $num_hosts hosts."
     # Utilizamos el contenido de sucess_1.txt como entrada para Mininet
     cat ./scripts/success_1.txt | sudo mn --custom topology.py --topo myTopo,$num_hosts --arp --mac --switch ovsk --controller remote
+    
 else
     # Si no se proporciona el número de hosts, ejecutamos Mininet con la topología predeterminada
     echo "Ejecutando Mininet con topología predeterminada."
