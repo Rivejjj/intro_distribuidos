@@ -1,0 +1,34 @@
+h1 echo "=========================================================="
+h1 echo
+h1 echo "TEST2"
+h1 echo
+h1 echo "h4 es un servidor TCP sobre el puerto 80"
+h1 echo "h2 envia primero"
+h1 echo "h3 envia segundo"
+h1 echo
+h1 echo "presione ctrl + c para iniciar el test"
+h1 echo
+h1 echo "=========================================================="
+
+h1 read -n 1 -s -r
+
+h4 xterm -hold  -e "sh scripts/levantar_tcp_80.sh" &
+h2 iperf -c h4 -i1 -p80
+h3 iperf -c h4 -i1 -p80
+
+h1 echo "=========================================================="
+h1 echo
+h1 echo "RESULTADO"
+h1 echo
+h1 echo "Como estamos usando tcp la coneccion de h2 falla porque ni"
+h1 echo "siquiera se llega a realizar el handshake"
+h1 echo "Mientras que h3 dependera de como se haya ejecutado el test"
+h1 echo "Como siempre se usa para el test un firewall en el s3, si"
+h1 echo "se usa una topologia de tama;o 3 el firewall quedara en el " 
+h1 echo "extremo y fallara la coneccion tambien. Mientras que si se " 
+h1 echo "usa un tama;ode red mayor se podra conectar normalmente"
+h1 echo
+h1 echo "presione ctrl + c para finalizar el test"
+h1 echo
+h1 echo "=========================================================="
+h1 read -n 1 -s -r

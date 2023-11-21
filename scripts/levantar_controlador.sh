@@ -1,0 +1,1 @@
+../pox.py forwarding.l2_learning firewall --rule=rules.json

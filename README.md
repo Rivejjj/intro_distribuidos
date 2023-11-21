@@ -31,11 +31,11 @@ En este proyecto, se utilizará un entorno virtual de Python2 para garantizar la
    Esto creará un entorno virtual llamado `myenv` utilizando Python 2.7.
 
 3. **Activación del Entorno Virtual:**
-   - En sistemas Linux/Mac:
+- En sistemas Linux/Mac:
      ```bash
      source myenv/bin/activate
      ```
-   - En sistemas Windows (PowerShell):
+- En sistemas Windows (PowerShell):
      ```bash
      .\myenv\Scripts\Activate
      ```
@@ -77,10 +77,9 @@ POX, un framework de controlador OpenFlow en Python, es esencial para implementa
 1. **Clonar el Repositorio:**
    - Abre una terminal y navega al directorio donde deseas instalar POX.
    - Ejecuta el siguiente comando para clonar el repositorio POX desde GitHub:
-
-     ```bash
-     git clone https://github.com/noxrepo/pox.git
-     ```
+      ```bash
+      git clone https://github.com/noxrepo/pox.git
+      ```
 
 #### Ejecución de POX con Firewall Personalizado:
 
@@ -111,9 +110,9 @@ POX, un framework de controlador OpenFlow en Python, es esencial para implementa
 2. Ejecuta la topología personalizada con Mininet:
 Para ejecutar la topología personalizada con Mininet, sigue estos pasos. Por defecto, la topología tiene 4 switches dinámicos.
 
-```bash
-sudo mn --custom topology.py --topo myTopo --arp --mac --switch ovsk --controller remote
-```
+   ```bash
+   sudo mn --custom topology.py --topo myTopo --arp --mac --switch ovsk --controller remote
+   ```
 
 Si deseas especificar la cantidad de switches dinámicos, utiliza el siguiente comando, reemplazando `<cant_switchs>` con el número deseado:
 
@@ -145,59 +144,59 @@ Este comando te permitirá personalizar la topología según tus necesidades, aj
 
 
 
-Client/Server:
-  -b, --bandwidth #[kmgKMG | pps]  bandwidth to send at in bits/sec or packets per second
-  -e, --enhancedreports    use enhanced reporting giving more tcp/udp and traffic information
-  -f, --format    [kmgKMG]   format to report: Kbits, Mbits, KBytes, MBytes
-  -i, --interval  #        seconds between periodic bandwidth reports
-  -l, --len       #[kmKM]    length of buffer in bytes to read or write (Defaults: TCP=128K, v4 UDP=1470, v6 UDP=1450)
-  -m, --print_mss          print TCP maximum segment size (MTU - TCP/IP header)
-  -o, --output    <filename> output the report or error message to this specified file
-  -p, --port      #        server port to listen on/connect to
-  -u, --udp                use UDP rather than TCP
+**Client/Server:**  
+  -b, --bandwidth #[kmgKMG | pps]  bandwidth to send at in bits/sec or packets per second  
+  -e, --enhancedreports    use enhanced reporting giving more tcp/udp and traffic information  
+  -f, --format    [kmgKMG]   format to report: Kbits, Mbits, KBytes, MBytes  
+  -i, --interval  #        seconds between periodic bandwidth reports  
+  -l, --len       #[kmKM]    length of buffer in bytes to read or write (Defaults: TCP=128K, v4 UDP=1470, v6 UDP=1450)  
+  -m, --print_mss          print TCP maximum segment size (MTU - TCP/IP header)  
+  -o, --output    <filename> output the report or error message to this specified file  
+  -p, --port      #        server port to listen on/connect to  
+  -u, --udp                use UDP rather than TCP  
       --udp-counters-64bit use 64 bit sequence numbers with UDP
-  -w, --window    #[KM]    TCP window size (socket buffer size)
-  -z, --realtime           request realtime scheduler
-  -B, --bind <host>[:<port>][%<dev>] bind to <host>, ip addr (including multicast address) and optional port and device
-  -C, --compatibility      for use with older versions does not sent extra msgs
-  -M, --mss       #        set TCP maximum segment size (MTU - 40 bytes)
-  -N, --nodelay            set TCP no delay, disabling Nagle's Algorithm
-  -S, --tos       #        set the socket's IP_TOS (byte) field
+  -w, --window    #[KM]    TCP window size (socket buffer size)  
+  -z, --realtime           request realtime scheduler  
+  -B, --bind <host>[:<port>][%<dev>] bind to <host>, ip addr (including multicast address) and optional port and device  
+  -C, --compatibility      for use with older versions does not sent extra msgs  
+  -M, --mss       #        set TCP maximum segment size (MTU - 40 bytes)  
+  -N, --nodelay            set TCP no delay, disabling Nagle's Algorithm  
+  -S, --tos       #        set the socket's IP_TOS (byte) field  
 
-Server specific:
-  -s, --server             run in server mode
-  -t, --time      #        time in seconds to listen for new connections as well as to receive traffic (default not set)
-      --udp-histogram #,#  enable UDP latency histogram(s) with bin width and count, e.g. 1,1000=1(ms),1000(bins)
-  -B, --bind <ip>[%<dev>]  bind to multicast address and optional device
-  -H, --ssm-host <ip>      set the SSM source, use with -B for (S,G) 
-  -U, --single_udp         run in single threaded UDP mode
+**Server specific:**  
+  -s, --server             run in server mode  
+  -t, --time      #        time in seconds to listen for new connections as well as to receive traffic (default not set)  
+      --udp-histogram #,#  enable UDP latency histogram(s)  with bin width and count, e.g. 1,1000=1(ms),1000(bins)  
+  -B, --bind <ip>[%<dev>]  bind to multicast address and optional device  
+  -H, --ssm-host <ip>      set the SSM source, use with -B for (S,G)  
+  -U, --single_udp         run in single threaded UDP mode  
   -D, --daemon             run the server as a daemon
-  -V, --ipv6_domain        Enable IPv6 reception by setting the domain and socket to AF_INET6 (Can receive on both IPv4 and IPv6)
+  -V, --ipv6_domain        Enable IPv6 reception by setting the domain and socket to AF_INET6 (Can receive on both IPv4 and IPv6)  
 
-Client specific:
-  -c, --client    <host>   run in client mode, connecting to <host>
-  -d, --dualtest           Do a bidirectional test simultaneously
-      --ipg                set the the interpacket gap (milliseconds) for packets within an isochronous frame
-      --isochronous <frames-per-second>:<mean>,<stddev> send traffic in bursts (frames - emulate video traffic)
-  -n, --num       #[kmgKMG]    number of bytes to transmit (instead of -t)
-  -r, --tradeoff           Do a bidirectional test individually
-  -t, --time      #        time in seconds to transmit for (default 10 secs)
-  -B, --bind [<ip> | <ip:port>] bind ip (and optional port) from which to source traffic
-  -F, --fileinput <name>   input the data to be transmitted from a file
-  -I, --stdin              input the data to be transmitted from stdin
-  -L, --listenport #       port to receive bidirectional tests back on
-  -P, --parallel  #        number of parallel client threads to run
-  -R, --reverse            reverse the test (client receives, server sends)
-  -T, --ttl       #        time-to-live, for multicast (default 1)
-  -V, --ipv6_domain        Set the domain to IPv6 (send packets over IPv6)
-  -X, --peer-detect        perform server version detection and version exchange
-  -Z, --linux-congestion <algo>  set TCP congestion control algorithm (Linux only)
+**Client specific:** 
+  -c, --client    <host>   run in client mode, connecting to <host>  
+  -d, --dualtest           Do a bidirectional test simultaneously  
+      --ipg                set the the interpacket gap (milliseconds) for packets within an isochronous frame  
+      --isochronous <frames-per-second>:<mean>,<stddev> send traffic in bursts (frames - emulate video traffic)  
+  -n, --num       #[kmgKMG]    number of bytes to transmit (instead of -t)  
+  -r, --tradeoff           Do a bidirectional test individually  
+  -t, --time      #        time in seconds to transmit for (default 10 secs)  
+  -B, --bind [<ip> | <ip:port>] bind ip (and optional port) from which to source traffic  
+  -F, --fileinput <name>   input the data to be transmitted from a file  
+  -I, --stdin              input the data to be transmitted from stdin  
+  -L, --listenport #       port to receive bidirectional tests back on  
+  -P, --parallel  #        number of parallel client threads to run  
+  -R, --reverse            reverse the test (client receives, server sends)  
+  -T, --ttl       #        time-to-live, for multicast (default 1)  
+  -V, --ipv6_domain        Set the domain to IPv6 (send packets over IPv6)  
+  -X, --peer-detect        perform server version detection and version exchange  
+  -Z, --linux-congestion <algo>  set TCP congestion control algorithm (Linux only)  
 
-Miscellaneous:
-  -x, --reportexclude [CDMSV]   exclude C(connection) D(data) M(multicast) S(settings) V(server) reports
-  -y, --reportstyle C      report as a Comma-Separated Values
-  -h, --help               print this message and quit
-  -v, --version            print version information and quit
+**Miscellaneous:**  
+  -x, --reportexclude [CDMSV]   exclude C(connection) D(data) M(multicast) S(settings) V(server) reports  
+  -y, --reportstyle C      report as a Comma-Separated Values  
+  -h, --help               print this message and quit  
+  -v, --version            print version information and quit  
 
 [kmgKMG] Indicates options that support a k,m,g,K,M or G suffix
 Lowercase format characters are 10^3 based and uppercase are 2^n based

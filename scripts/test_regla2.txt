@@ -1,0 +1,29 @@
+h1 echo "=========================================================="
+h1 echo
+h1 echo "TEST1"
+h1 echo
+h1 echo "h4 es un servidor UDP sobre el puerto 5001"
+h1 echo "h2 envia primero"
+h1 echo "h1 envia segundo"
+h1 echo
+h1 echo "presione ctrl + c para iniciar el test"
+h1 echo
+h1 echo "=========================================================="
+
+h1 read -n 1 -s -r
+
+h4 xterm -hold  -e "sh scripts/levantar_udp.sh" &
+h2 iperf -u -i1 -c h4
+h1 iperf -u -i1 -c h4
+
+h1 echo "=========================================================="
+h1 echo
+h1 echo "RESULTADO"
+h1 echo
+h1 echo "Vemos que del lado del servidor solo llegaron paquetes del h2 y no del h1 "
+h1 echo "Debido a que esta la regla que bloquea cosas del h1, que usen UDP, por el puerto 5001"
+h1 echo
+h1 echo "presione ctrl + c para finalizar el test"
+h1 echo
+h1 echo "=========================================================="
+h1 read -n 1 -s -r

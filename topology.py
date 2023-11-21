@@ -2,6 +2,7 @@ from mininet.topo import Topo
 
 class CustomTopology(Topo):
     def __init__(self, num_switches=4):
+        num_switches = int(num_switches)
         if num_switches <= 0:
             raise ValueError("The number of switches must be a non-negative value.")
     
@@ -25,7 +26,6 @@ class CustomTopology(Topo):
         # Conexiones entre hosts estáticos e inicio/fin de la cadena dinámica
         self.addLink(h1, switches[0])
         self.addLink(h2, switches[0])
-
         self.addLink(switches[-1], h3)
         self.addLink(switches[-1], h4)
         

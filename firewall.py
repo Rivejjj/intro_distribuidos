@@ -93,8 +93,9 @@ class Firewall (EventMixin):
         
 
     def _handle_ConnectionUp (self, event):
+        global firewall_dpid
         if int(event.dpid) == firewall_dpid:
-            log.debug("Firewall rules installed on %s", dpidToStr(event.dpid))
+            log.debug("Firewall rules should be insstalled in %i, installed on %i", firewall_dpid, int(event.dpid))
             for rule in rules:
                 self.add_firewall_rule(event.connection, rule)
         

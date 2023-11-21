@@ -1,0 +1,25 @@
+h1 echo "=========================================================="
+h1 echo
+h1 echo "TEST REGLA 3"
+h1 echo
+h1 echo "Realizamos un pingall"
+h1 echo
+h1 echo "presione ctrl + c para iniciar el test"
+h1 echo
+h1 echo "=========================================================="
+
+h1 read -n 1 -s -r
+
+pingall
+
+h1 echo "=========================================================="
+h1 echo
+h1 echo "RESULTADO"
+h1 echo
+h1 echo "Vemos que hay un timeout tanto cuando h1 manda a h2 , como"
+h1 echo "cuando h2 le manda a h1"
+h1 echo
+h1 echo "presione ctrl + c para finalizar el test"
+h1 echo
+h1 echo "=========================================================="
+h1 read -n 1 -s -r
