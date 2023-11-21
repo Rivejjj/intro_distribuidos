@@ -1,16 +1,15 @@
 {
+    "firewall_dpid": 1,
     "rule_1": {
         "dst_port": 80
     },
     "rule_2": {
         "src_host": "10.0.0.1",
         "dst_port": 5001,
-        "protocol": 17
+        "transport_protocol": "UDP"
     },
     "rule_3": {
-        "action": "drop",
         "src_host": "10.0.0.1",  
         "dst_host": "10.0.0.2"
     }
 }
-  
